@@ -1,0 +1,39 @@
+---
+apiVersion: apps/v1 # for versions before 1.9.0 use apps/v1beta2
+kind: Deployment
+metadata:
+  name: ices-station
+spec:
+  selector:
+    matchLabels:
+      app: ices-station
+  replicas: 1 # tells deployment to run 2 pods matching the template
+  template:
+    metadata:
+      labels:
+        app: ices-station
+    spec:
+      containers:
+      - name: ices-station
+        image: localhost:5000/docker-ices:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8001
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: radio
+  name: ices-station
+spec:
+  type: NodePort
+  clusterIP: 10.96.0.11
+  ports:
+    - protocol: TCP
+      name: http
+      port: 8001
+      nodePort: 30400
+      targetPort: 8001
+  selector:
+    app: ices-station
+---
