@@ -1,4 +1,4 @@
-FROM ubuntu:16.04
+FROM ubuntu:18.04
 
 MAINTAINER Greg Holthaus "gerg@gerg.me"
 
@@ -8,7 +8,7 @@ RUN apt-get -qq -y update && \
     apt-get -y install wget && \
     wget -qO - http://icecast.org/multimedia-obs.key | apt-key add -
     
-RUN echo "deb http://download.opensuse.org/repositories/multimedia:/xiph/xUbuntu_16.04/ ./" > /etc/apt/sources.list.d/icecast.list
+RUN echo "deb http://download.opensuse.org/repositories/multimedia:/xiph/xUbuntu_18.04/ ./" > /etc/apt/sources.list.d/icecast.list
 
 RUN apt-get -qq -y update && \
     apt-get -qq -y install icecast2 python-setuptools joe supervisor sudo && \

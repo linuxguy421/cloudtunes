@@ -1,4 +1,4 @@
-FROM php:7.2.10-fpm-alpine
+FROM php:fpm-alpine3.12
 
 LABEL maintainer="Greg Holthaus <gerg@gerg.me>"
 
@@ -6,15 +6,15 @@ ENV php_conf /usr/local/etc/php-fpm.conf
 ENV fpm_conf /usr/local/etc/php-fpm.d/www.conf
 ENV php_vars /usr/local/etc/php/conf.d/docker-vars.ini
 
-ENV NGINX_VERSION 1.14.0
-ENV LUA_MODULE_VERSION 0.10.13
-ENV DEVEL_KIT_MODULE_VERSION 0.3.0
+ENV NGINX_VERSION 1.18.0
+ENV LUA_MODULE_VERSION 0.10.16
+ENV DEVEL_KIT_MODULE_VERSION 0.3.1
 ENV LUAJIT_LIB=/usr/lib
 ENV LUAJIT_INC=/usr/include/luajit-2.1
 
 # resolves #166
 ENV LD_PRELOAD /usr/lib/preloadable_libiconv.so php
-RUN apk add --no-cache --repository http://dl-3.alpinelinux.org/alpine/edge/community gnu-libiconv
+RUN apk add --no-cache --repository http://dl-cdn.alpinelinux.org/alpine/edge/community/ gnu-libiconv
 RUN apk update
 
 RUN GPG_KEYS=B0F4253373F8F6F510D42178520A9993A1C052F8 \
@@ -68,6 +68,7 @@ RUN GPG_KEYS=B0F4253373F8F6F510D42178520A9993A1C052F8 \
   " \
   && addgroup -S nginx \
   && adduser -D -S -h /var/cache/nginx -s /sbin/nologin -G nginx nginx \ 
+  && set -ex \ 
   && apk add --no-cache --virtual .build-deps \
     autoconf \
     gcc \
@@ -169,9 +170,9 @@ RUN echo @testing http://nl.alpinelinux.org/alpine/edge/testing >> /etc/apk/repo
     curl \
     libcurl \
     git \
-    python \
-    python-dev \
-    py-pip \
+    python3 \
+    python3-dev \
+    py3-pip \
     augeas-dev \
     libressl-dev \
     ca-certificates \
@@ -192,10 +193,8 @@ RUN echo @testing http://nl.alpinelinux.org/alpine/edge/testing >> /etc/apk/repo
     taglib \
     libjpeg-turbo-dev && \
     docker-php-ext-configure gd \
-      --with-gd \
-      --with-freetype-dir=/usr/include/ \
-      --with-png-dir=/usr/include/ \
-      --with-jpeg-dir=/usr/include/ && \
+      --with-freetype \
+      --with-jpeg \
     #curl iconv session
     docker-php-ext-install iconv pdo_mysql pdo_sqlite mysqli gd exif intl xsl json soap dom zip opcache && \
     pecl install xdebug-2.6.0 && \
