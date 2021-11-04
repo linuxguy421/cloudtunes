@@ -1,4 +1,4 @@
-FROM php:fpm-alpine3.12
+FROM php:7.4.0-fpm-alpine
 
 LABEL maintainer="Greg Holthaus <gerg@gerg.me>"
 
@@ -135,14 +135,10 @@ RUN GPG_KEYS=B0F4253373F8F6F510D42178520A9993A1C052F8 \
   && strip /usr/sbin/nginx* \
   && strip /usr/lib/nginx/modules/*.so \
   && rm -rf /usr/src/nginx-$NGINX_VERSION \
-  \
-  # Bring in gettext so we can get `envsubst`, then throw
-  # the rest away. To do this, we need to install `gettext`
-  # then move `envsubst` out of the way so `gettext` can
-  # be deleted completely, then move `envsubst` back.
+  
   && apk add --no-cache --virtual .gettext gettext \
   && mv /usr/bin/envsubst /tmp/ \
-  \
+
   && runDeps="$( \
     scanelf --needed --nobanner /usr/sbin/nginx /usr/lib/nginx/modules/*.so /tmp/envsubst \
       | awk '{ gsub(/,/, "\nso:", $2); print "so:" $2 }' \
@@ -154,8 +150,6 @@ RUN GPG_KEYS=B0F4253373F8F6F510D42178520A9993A1C052F8 \
   && apk del .build-deps \
   && apk del .gettext \
   && mv /tmp/envsubst /usr/local/bin/ \
-  \
-  # forward request and error logs to docker log collector
   && ln -sf /dev/stdout /var/log/nginx/access.log \
   && ln -sf /dev/stderr /var/log/nginx/error.log
 
@@ -191,25 +185,26 @@ RUN echo @testing http://nl.alpinelinux.org/alpine/edge/testing >> /etc/apk/repo
     freetype-dev \
     sqlite-dev \
     taglib \
-    libjpeg-turbo-dev && \
+    libjpeg-turbo-dev \
+    libzip-dev \
+    libgcrypt-dev && \
     docker-php-ext-configure gd \
       --with-freetype \
-      --with-jpeg \
+      --with-jpeg && \
     #curl iconv session
     docker-php-ext-install iconv pdo_mysql pdo_sqlite mysqli gd exif intl xsl json soap dom zip opcache && \
-    pecl install xdebug-2.6.0 && \
+    pecl install xdebug-3.1.0 && \
     docker-php-source delete && \
     mkdir -p /etc/nginx && \
     mkdir -p /var/www/app && \
     mkdir -p /run/nginx && \
     mkdir -p /var/log/supervisor && \
-    EXPECTED_COMPOSER_SIGNATURE=$(wget -q -O - https://composer.github.io/installer.sig) && \
-    php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" && \
-    php -r "if (hash_file('SHA384', 'composer-setup.php') === '${EXPECTED_COMPOSER_SIGNATURE}') { echo 'Composer.phar Installer verified'; } else { echo 'Composer.phar Installer corrupt'; unlink('composer-setup.php'); } echo PHP_EOL;" && \
-    php composer-setup.php --install-dir=/usr/bin --filename=composer && \
-    php -r "unlink('composer-setup.php');"  && \
-    pip install -U pip && \
-    pip install -U certbot && \
+	php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" \
+	php -r "if (hash_file('sha384', 'composer-setup.php') === '906a84df04cea2aa72f40b5f787e49f22d4c2f19492ac310e8cba5b96ac8b64115ac402c8cd292b8a03482574915d1a8') { echo 'Installer verified'; } else { echo 'Installer corrupt'; unlink('composer-setup.php'); } echo PHP_EOL;" \
+	php composer-setup.php \
+	php -r "unlink('composer-setup.php');" && \
+    pip3 install -U pip && \
+    pip3 install -U certbot && \
     mkdir -p /etc/letsencrypt/webrootauth && \
     apk del gcc musl-dev linux-headers libffi-dev augeas-dev python-dev make autoconf
 #    apk del .sys-deps
@@ -220,7 +215,7 @@ RUN apk add --no-cache --update libmemcached-libs zlib
 RUN set -xe \
     && apk add --no-cache --update --virtual .phpize-deps $PHPIZE_DEPS \
     && apk add --no-cache --update --virtual .memcached-deps $MEMCACHED_DEPS \
-    && git clone -b php7 https://github.com/php-memcached-dev/php-memcached /usr/src/php/ext/memcached \
+    && git clone https://github.com/php-memcached-dev/php-memcached /usr/src/php/ext/memcached \
     && docker-php-ext-configure /usr/src/php/ext/memcached \
         --disable-memcached-sasl \
     && docker-php-ext-install /usr/src/php/ext/memcached \
