@@ -198,6 +198,7 @@ RUN echo @testing http://nl.alpinelinux.org/alpine/edge/testing >> /etc/apk/repo
     libffi-dev \
     freetype-dev \
     sqlite-dev \
+    taglib \
     libjpeg-turbo-dev \
     postgresql-dev && \
     docker-php-ext-install gd && \
@@ -226,6 +227,18 @@ RUN docker-php-ext-install pdo_mysql mysqli pdo_sqlite pgsql pdo_pgsql exif intl
     apk del gcc musl-dev linux-headers libffi-dev augeas-dev python3-dev make autoconf
 #    apk del .sys-deps
 #    ln -s /usr/bin/php7 /usr/bin/php
+
+ENV MEMCACHED_DEPS zlib-dev libmemcached-dev cyrus-sasl-dev
+RUN apk add --no-cache --update libmemcached-libs zlib
+RUN set -xe \
+    && apk add --no-cache --update --virtual .phpize-deps $PHPIZE_DEPS \
+    && apk add --no-cache --update --virtual .memcached-deps $MEMCACHED_DEPS \
+    && git clone https://github.com/php-memcached-dev/php-memcached /usr/src/php/ext/memcached \
+    && docker-php-ext-configure /usr/src/php/ext/memcached \
+        --disable-memcached-sasl \
+    && docker-php-ext-install /usr/src/php/ext/memcached \
+    && rm -rf /usr/src/php/ext/memcached \
+    && apk del .memcached-deps
 
 ADD conf/supervisord.conf /etc/supervisord.conf
 
@@ -271,6 +284,14 @@ RUN cp /usr/local/etc/php/php.ini-development /usr/local/etc/php/php.ini && \
 	    -e "s/;zend_extension=opcache/zend_extension=opcache/g" \
             /usr/local/etc/php/php.ini
 
+# Install NodeJS, NPM, Yarn
+RUN apk add --no-cache nodejs npm yarn
+
+# Install jPlayer
+RUN /usr/bin/yarn add jplayer
+
+# Install Album Art
+RUN /usr/bin/yarn add album-art
 
 # Add Scripts
 ADD scripts/start.sh /start.sh
