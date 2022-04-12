@@ -1,7 +1,7 @@
 # CloudTune
 
 ### NOTICE: This is in early development and works with Minikube -- you'll
-### need to modify things (such as IP addresses) to work directly with your Docker/Kubernetes
+### need to modify things to work directly with your Docker/Kubernetes
 
 ### Installation
 
@@ -10,10 +10,6 @@
 The easy way is to use the included buildRadio.sh script, see how to use it with:
 
 ```./buildRadio.sh -h```
-
-To build the entire project and launch it:
-
-```./buildRadio.sh -F```
 
 #### Manual Method
 
@@ -40,17 +36,8 @@ You can deploy the images to Kubernetes with the command:
 **NOTES**
 
 - Early development limitations
-  - OGG files must be placed in docker-ices/data/station_0 folder
+  - OGG files must be placed in docker-ices/data/ folder
   - Filenames of OGG files MUST be in ARTIST - TITLE format for 'Now Playing' to work properly
-  - You must use underscores instead of spaces in OGG filenames (script below)
-
-```
-for file in *;                                                                                                                                                                       ✔  16:10:50  
-do
-echo Converting "$file" to "${file// /_}"
-mv "$file" "${file// /_}"
-done
-```
 
 **TODO**
 
