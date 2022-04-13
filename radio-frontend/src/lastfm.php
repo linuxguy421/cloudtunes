@@ -10,7 +10,7 @@ class LastFMArtwork {
                 $xml    = @file_get_contents($xml);
                 
                 if(!$xml) {
-                        return 'http://localhost/noartwork.jpg';
+                        return '/img/cloudtunes.png';
                 }
                 
                 $xml = new SimpleXMLElement($xml);
