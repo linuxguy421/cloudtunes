@@ -40,17 +40,9 @@ You can deploy the images to Kubernetes with the command:
 **NOTES**
 
 - Early development limitations
-  - OGG files must be placed in docker-ices/data/station_0 folder
-  - Filenames of OGG files MUST be in ARTIST - TITLE format for 'Now Playing' to work properly
-  - You must use underscores instead of spaces in OGG filenames (script below)
-
-```
-for file in *;                                                                                                                                                                       ✔  16:10:50  
-do
-echo Converting "$file" to "${file// /_}"
-mv "$file" "${file// /_}"
-done
-```
+  - ~~OGG~~ Audio files must be placed in docker-ices/data/station_0 folder
+  - Filenames of ~~OGG~~ audio files MUST be in ARTIST - TITLE format for 'Now Playing' to work properly
+  - ~~You must use underscores instead of spaces in OGG filenames (script below)~~ Now with automatic processing!
 
 **TODO**
 

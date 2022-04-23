@@ -3,10 +3,8 @@
 #function errorHandler() {
 #}
 
-printf "Checking song filenames...\n"
+#Check files for spaces and replace with underscores
+find /data/station_0 -type f -name "* *" | while read file; do mv "$file" ${file// /_}; done
 
-for file in /data/station_0/*.ogg; 
-do
-echo Converting "$file" to "${file// /_}"
-mv "$file" "${file// /_}"
-done
+#Check for WAV, MP3, AIFF, AAC, WMA, FLAC - Convert to OGG
+find /data/station_0 -type f \( -name "*.wav" -o -name "*.mp3" -o -name "*.aiff" -o -name "*.aac" -o -name "*.wma" -o -name "*.flac" \) | while read file; do ffmpeg -i $file -b:a 128k "${file%.*}.ogg"; done
