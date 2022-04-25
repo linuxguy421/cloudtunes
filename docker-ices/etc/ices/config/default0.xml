@@ -9,7 +9,7 @@
         <metadata>
             <name>CloudTunes Demo Station</name>
             <genre>Demo</genre>
-            <description>A collection of Demo songs to demonstrate CloudTunes</description>
+            <description>Top 90's Hits! | CloudTunes Demo</description>
         </metadata>
         <input>
             <module>playlist</module>

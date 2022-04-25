@@ -13,6 +13,7 @@ timeout 5m normalize-ogg --bitrate 128 --tmpdir /tmp --force-encode --ogg ${file
 RESULT=$?
 if [ ${RESULT} -eq 124 ]; then errorHandler; fi
 timeout 5s lltag -F "/%i/%i/%a - %t" -G -R ${file} --sep _ --spaces -g "CloudTunes Rocks!" --yes
-RESULT=$?
-if [ ${RESULT} -eq 124 ]; then errorHandler; fi
+find /data/station_0 -type f -name "* *" | while read file; do mv "$file" ${file// /_}; done
+#RESULT=$?
+#if [ ${RESULT} -ne 0 ]; then errorHandler; fi
 done

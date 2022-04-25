@@ -5,6 +5,11 @@
 <!-- Website Design By: www.happyworm.com -->
 <title>Default Radio Station [Demo]</title>
 <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+<style>
+body {
+  background-color: #0a0a0a;
+}
+</style>
 <!-- <link href="dist/skin/blue.monday/css/jplayer.blue.monday.min.css" rel="stylesheet" type="text/css" /> -->
 <link href="dist/skin/flat.audio/css/flat.audio.css" rel="stylesheet" type="text/css" />
 <script type="text/javascript" src="lib/jquery.min.js"></script>
