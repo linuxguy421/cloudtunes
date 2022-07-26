@@ -46,6 +46,7 @@ while test $# -gt 0; do
 					echo "-d, --destroy		Destroy CloudTunes"
 					echo "-F, --full		Destroy, rebuild, then relaunch CloudTunes"
 					echo "-L, --listen		Launch radio station in MPV"
+					echo "-Lv			Launch radio station in MPV with FFmpeg visuals"
 					echo "--use-sysdocker		Bypass enviornment checking"
 					echo "-v, --version		Show version"
 					exit 0
@@ -70,6 +71,10 @@ while test $# -gt 0; do
 					;;
 			-L|--listen)
 					mpv $(minikube service -n radio icecast-srv --url)/default0.ogg
+					exit 0
+					;;
+			-Lv)
+					mpv --lavfi-complex='[aid1] asplit [ao] [v] ; [v] showwaves=mode=p2p:split_channels=1,format=rgb0 [vo]' $(minikube service -n radio icecast-srv --url)/default0.ogg
 					exit 0
 					;;
 			-l|--launch)
