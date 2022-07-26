@@ -9,6 +9,7 @@ command -v docker >/dev/null 2>&1 || { echo >&2 "I require docker but it's not i
 command -v kubectl >/dev/null 2>&1 || { echo >&2 "I require kubtctl but it's not installed.  Aborting."; exit 1; }
 command -v kubectx >/dev/null 2>&1 || { echo >&2 "I require kubectx but it's not installed.  Aborting."; exit 1; }
 command -v kubens >/dev/null 2>&1 || { echo >&2 "I require kubens but it's not installed.  Aborting."; exit 1; }
+command -v mpv >/dev/null 2>&1 || { echo >&2 "I require mpv but it's not installed.  Aborting."; exit 1; }
 #command -v zenity >/dev/null 2>&1 || ( echo >&2 "I require zenity but it's not installed.  Aborting."; exit 1; )
 #command -v dialog >/dev/null 2>&1 || ( echo >&2 "I require dialog but it's not installed.  Aborting."; exit 1; )
 
@@ -44,6 +45,7 @@ while test $# -gt 0; do
 					echo "-l, --launch		Launch CloudTunes"
 					echo "-d, --destroy		Destroy CloudTunes"
 					echo "-F, --full		Destroy, rebuild, then relaunch CloudTunes"
+					echo "-L, --listen		Launch radio station in MPV"
 					echo "--use-sysdocker		Bypass enviornment checking"
 					echo "-v, --version		Show version"
 					exit 0
@@ -64,6 +66,10 @@ while test $# -gt 0; do
 					;;
 			-B|--browser)
 					minikube service -n radio radio-fe-app
+					exit 0
+					;;
+			-L|--listen)
+					mpv $(minikube service -n radio icecast-srv --url)/default0.ogg
 					exit 0
 					;;
 			-l|--launch)
