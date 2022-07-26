@@ -9,7 +9,8 @@ command -v docker >/dev/null 2>&1 || { echo >&2 "I require docker but it's not i
 command -v kubectl >/dev/null 2>&1 || { echo >&2 "I require kubtctl but it's not installed.  Aborting."; exit 1; }
 command -v kubectx >/dev/null 2>&1 || { echo >&2 "I require kubectx but it's not installed.  Aborting."; exit 1; }
 command -v kubens >/dev/null 2>&1 || { echo >&2 "I require kubens but it's not installed.  Aborting."; exit 1; }
-command -v mpv >/dev/null 2>&1 || { echo >&2 "I require mpv but it's not installed.  Aborting."; exit 1; }
+command -v mpv >/dev/null 2>&1 || { echo >&2 "I optionally require mpv but it's not installed."; }
+command -v vis >/dev/null 2>&1 || { echo >&2 "I optionally require cli-visualizer but it's not installed."; }
 #command -v zenity >/dev/null 2>&1 || ( echo >&2 "I require zenity but it's not installed.  Aborting."; exit 1; )
 #command -v dialog >/dev/null 2>&1 || ( echo >&2 "I require dialog but it's not installed.  Aborting."; exit 1; )
 
@@ -46,7 +47,8 @@ while test $# -gt 0; do
 					echo "-d, --destroy		Destroy CloudTunes"
 					echo "-F, --full		Destroy, rebuild, then relaunch CloudTunes"
 					echo "-L, --listen		Launch radio station in MPV"
-					echo "-Lv			Launch radio station in MPV with FFmpeg visuals"
+					echo "-Lg			Launch radio station in MPV with FFmpeg visuals"
+					echo "-Lc			Launch radio station in MPV with cli-visualizer (https://github.com/dpayne/cli-visualizer)"
 					echo "--use-sysdocker		Bypass enviornment checking"
 					echo "-v, --version		Show version"
 					exit 0
@@ -73,8 +75,11 @@ while test $# -gt 0; do
 					mpv $(minikube service -n radio icecast-srv --url)/default0.ogg
 					exit 0
 					;;
-			-Lv)
+			-Lg)
 					mpv --lavfi-complex='[aid1] asplit [ao] [v] ; [v] showwaves=mode=p2p:split_channels=1,format=rgb0 [vo]' $(minikube service -n radio icecast-srv --url)/default0.ogg
+					exit 0
+					;;
+			-Lc)		mpv --really-quiet $(minikube service -n radio icecast-srv --url)/default0.ogg | vis
 					exit 0
 					;;
 			-l|--launch)
