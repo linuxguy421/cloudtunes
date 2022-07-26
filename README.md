@@ -47,7 +47,7 @@ The generated docker images can be run with the commands:
 
 You can deploy the images to Kubernetes with the command:
 
-```kubectl create -f docker-icecast/deploy -f docker-ices/deploy -f docker-memecached/deploy-f docker-frontend/deploy```
+```kubectl create -f docker-icecast/deploy -f docker-ices/deploy -f docker-memcached/ deploy -f docker-frontend/deploy```
 
 **NOTES**
 
