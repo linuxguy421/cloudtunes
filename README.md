@@ -27,11 +27,13 @@ To build the entire project and launch it:
 
 To build the cloudtune images from the Dockerfiles, run the commands:
 
-```docker build -t icecast:latest ./docker-icecast/```
+```docker build -t docker-icecast:latest ./docker-icecast/```
 
-```docker build -t ices:latest ./docker-ices/```
+```docker build -t docker-ices:latest ./docker-ices/```
 
-```docker build -t radio-frontend:latest ./docker-frontend/```
+```docker build -t docker-memcached:latest ./docker-memcached/```
+
+```docker build -t radio-frontend:latest ./radio-frontend/```
 
 The generated docker images can be run with the commands:
 
@@ -39,11 +41,13 @@ The generated docker images can be run with the commands:
 
 ```docker run -d -p 8001:8001 ices:latest```
 
+```docker run -d -p 11211:11211 docker-memcached:latest```
+
 ```docker run -d -p 80:80 -p 443:443 radio-frontend:latest```
 
 You can deploy the images to Kubernetes with the command:
 
-```kubectl create -f docker-icecast/deploy -f docker-ices/deploy -f docker-frontend/deploy```
+```kubectl create -f docker-icecast/deploy -f docker-ices/deploy -f docker-memecached/deploy-f docker-frontend/deploy```
 
 **NOTES**
 
