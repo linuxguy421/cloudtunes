@@ -1,7 +1,7 @@
 # CloudTune
 
-### NOTICE: This is in early development and works with Minikube -- you'll
-### need to modify things (such as IP addresses) to work directly with your Docker/Kubernetes
+### NOTICE: This is a long-term project being build in Minikube -- you'll
+### need to modify things (such as IP addresses) to work outside of Minikube!
 
 ### Pre-installation
 
@@ -51,7 +51,7 @@ You can deploy the images to Kubernetes with the command:
 
 **NOTES**
 
-- Early development limitations
+- Known limitations
   - ~~OGG~~ Audio files must be placed in docker-ices/data/station_0 folder
   - Filenames of ~~OGG~~ audio files MUST be in ARTIST - TITLE format for 'Now Playing' to work properly
   - ~~You must use underscores instead of spaces in OGG filenames (script below)~~ Now with automatic processing!
@@ -67,4 +67,4 @@ You can deploy the images to Kubernetes with the command:
 
 **SCREENSHOT**
 
-![Alt text](https://cloudtunes.us/cloudtunes-ss.png)
+~~~![Alt text](https://cloudtunes.us/cloudtunes-ss.png)~~~
