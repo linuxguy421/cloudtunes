@@ -1,6 +1,6 @@
 # CloudTune
 
-### NOTICE: This is a long-term project being build in Minikube -- you'll
+### NOTICE: This is a long-term project being built in Minikube -- you'll
 ### need to modify things (such as IP addresses) to work outside of Minikube!
 
 ### Pre-installation
