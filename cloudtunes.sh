@@ -1,10 +1,23 @@
 #!/usr/bin/env bash
 
+# Docker registry address and port
 REGISTRY_HOST="localhost"
 REGISTRY_PORT="5000"
+
+# Uncomment if you do not want CloudTunes Docker to build from cache
+#DOCKER_NO_CACHE="--no-cache"
+
+# Leave this alone.
 K8S_CONTEXT="minikube"
+
+# Namespace and option to launch after builds
+LAUNCH_NAMESPACE="radio"
+LAUNCH_AFTER_BUILD="false"
+
+# CloudTunes version
 CTVERSION="v0.0.55"
 
+# Check if all requirements for CloudTunes are met
 command -v docker >/dev/null 2>&1 || { echo >&2 "I require docker but it's not installed.  Aborting."; exit 1; }
 command -v kubectl >/dev/null 2>&1 || { echo >&2 "I require kubtctl but it's not installed.  Aborting."; exit 1; }
 command -v kubectx >/dev/null 2>&1 || { echo >&2 "I require kubectx but it's not installed.  Aborting."; exit 1; }
@@ -12,9 +25,7 @@ command -v kubens >/dev/null 2>&1 || { echo >&2 "I require kubens but it's not i
 command -v mpv >/dev/null 2>&1 || { echo >&2 "I optionally require mpv but it's not installed."; }
 command -v vis >/dev/null 2>&1 || { echo >&2 "I optionally require cli-visualizer but it's not installed."; }
 
-LAUNCH_NAMESPACE="radio"
-LAUNCH_AFTER_BUILD="false"
-
+# CloudTunes begins here
 function version() {
 	printf "CloudTunes ${CTVERSION}\n"
 }
@@ -60,7 +71,7 @@ while test $# -gt 0; do
 					createNS
 					switchNS
 					for MDIR in `ls -d */`; do
-						docker build -t ${REGISTRY_HOST}:${REGISTRY_PORT}/${MDIR%/}:latest ./${MDIR}
+						docker build ${DOCKER_NO_CACHE} -t ${REGISTRY_HOST}:${REGISTRY_PORT}/${MDIR%/}:latest ./${MDIR}
 						docker push ${REGISTRY_HOST}:${REGISTRY_PORT}/${MDIR%/}:latest
 					done
 					shift

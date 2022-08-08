@@ -224,6 +224,7 @@ RUN docker-php-ext-install pdo_mysql mysqli pdo_sqlite pgsql pdo_pgsql exif intl
   #  pip3 install -U pip && \
     pip3 install -U certbot && \
     mkdir -p /etc/letsencrypt/webrootauth && \
+    composer require servo/fluidxml && \
     apk del gcc musl-dev linux-headers libffi-dev augeas-dev python3-dev make autoconf
 #    apk del .sys-deps
 #    ln -s /usr/bin/php7 /usr/bin/php
