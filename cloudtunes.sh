@@ -3,7 +3,7 @@
 REGISTRY_HOST="localhost"
 REGISTRY_PORT="5000"
 K8S_CONTEXT="minikube"
-CTVERSION="v0.0.54"
+CTVERSION="v0.0.55"
 
 command -v docker >/dev/null 2>&1 || { echo >&2 "I require docker but it's not installed.  Aborting."; exit 1; }
 command -v kubectl >/dev/null 2>&1 || { echo >&2 "I require kubtctl but it's not installed.  Aborting."; exit 1; }
@@ -11,8 +11,6 @@ command -v kubectx >/dev/null 2>&1 || { echo >&2 "I require kubectx but it's not
 command -v kubens >/dev/null 2>&1 || { echo >&2 "I require kubens but it's not installed.  Aborting."; exit 1; }
 command -v mpv >/dev/null 2>&1 || { echo >&2 "I optionally require mpv but it's not installed."; }
 command -v vis >/dev/null 2>&1 || { echo >&2 "I optionally require cli-visualizer but it's not installed."; }
-#command -v zenity >/dev/null 2>&1 || ( echo >&2 "I require zenity but it's not installed.  Aborting."; exit 1; )
-#command -v dialog >/dev/null 2>&1 || ( echo >&2 "I require dialog but it's not installed.  Aborting."; exit 1; )
 
 LAUNCH_NAMESPACE="radio"
 LAUNCH_AFTER_BUILD="false"
