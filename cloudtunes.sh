@@ -116,7 +116,6 @@ while test $# -gt 0; do
                                         	docker push ${REGISTRY_HOST}:${REGISTRY_PORT}/${MDIR%/}:latest
                                         	kubectl create -f ${MDIR}/deploy/
                                         done
-                                        minikube service -n radio --all
                                         kubectl get po
                                         exit 0
                                         ;;
