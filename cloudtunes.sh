@@ -115,11 +115,13 @@ while test $# -gt 0; do
                                         	docker build -t ${REGISTRY_HOST}:${REGISTRY_PORT}/${MDIR%/}:latest ./${MDIR}
                                         	docker push ${REGISTRY_HOST}:${REGISTRY_PORT}/${MDIR%/}:latest
                                         	kubectl create -f ${MDIR}/deploy/
-                                        	if [ $1 = "--FB" ]; then
-                                        	minikube service -n radio radio-fe-app
-                                        	fi
                                         done
                                         kubectl get po
+                                        if [[ "$1" == "-FB" ]]; then
+                                        	printf "Waiting a few seconds...\n"
+                                        	sleep 5
+                                        	minikube service -n radio radio-fe-app
+                                        fi
                                         exit 0
                                         ;;
 			-v|--version)
