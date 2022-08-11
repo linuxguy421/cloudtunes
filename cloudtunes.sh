@@ -54,7 +54,7 @@ while test $# -gt 0; do
 					echo "-B, --browser		Launch CloudTunes service in browser"
 					echo "-l, --launch		Launch CloudTunes"
 					echo "-d, --destroy		Destroy CloudTunes"
-					echo "-F, --full		Destroy, rebuild, then relaunch CloudTunes"
+					echo "-F[B], --full		Destroy, rebuild, then relaunch CloudTunes, and optionally browser"
 					echo "-L, --listen		Launch radio station in MPV"
 					echo "-Lg			Launch radio station in MPV with FFmpeg visuals"
 					echo "-Lc			Launch radio station in MPV with cli-visualizer (https://github.com/dpayne/cli-visualizer)"
@@ -115,6 +115,9 @@ while test $# -gt 0; do
                                         	docker build -t ${REGISTRY_HOST}:${REGISTRY_PORT}/${MDIR%/}:latest ./${MDIR}
                                         	docker push ${REGISTRY_HOST}:${REGISTRY_PORT}/${MDIR%/}:latest
                                         	kubectl create -f ${MDIR}/deploy/
+                                        	if [ "$1" == "--FB" ]; then
+                                        		minikube service -n radio radio-fe-app
+                                        	fi
                                         done
                                         kubectl get po
                                         exit 0
