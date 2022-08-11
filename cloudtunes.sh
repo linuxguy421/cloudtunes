@@ -107,7 +107,7 @@ while test $# -gt 0; do
 					done
 					exit 0
 					;;
-			-F|--full)
+			-F|-FB|--full)
 					[[ $ENV_SKIP = "1" ]] || check_env
 					switchNS
 					for MDIR in `ls -d */`; do
@@ -115,8 +115,8 @@ while test $# -gt 0; do
                                         	docker build -t ${REGISTRY_HOST}:${REGISTRY_PORT}/${MDIR%/}:latest ./${MDIR}
                                         	docker push ${REGISTRY_HOST}:${REGISTRY_PORT}/${MDIR%/}:latest
                                         	kubectl create -f ${MDIR}/deploy/
-                                        	if [ "$1" == "--FB" ]; then
-                                        		minikube service -n radio radio-fe-app
+                                        	if [ $1 = "--FB" ]; then
+                                        	minikube service -n radio radio-fe-app
                                         	fi
                                         done
                                         kubectl get po
