@@ -124,9 +124,10 @@ while test $# -gt 0; do
 					exit 0
 					;;
 			*)
+					printf "I dont know how to do that.\n"
 					break
 					;;
 					esac
 done
-echo ":)"
+if [ -z "$1" ]; then version; fi
 exit 0
