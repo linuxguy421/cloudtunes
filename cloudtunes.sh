@@ -109,6 +109,7 @@ while test $# -gt 0; do
 					;;
 			-F|-FB|--full)
 					[[ $ENV_SKIP = "1" ]] || check_env
+					createNS
 					switchNS
 					for MDIR in `ls -d */`; do
                                                 kubectl delete -f ${MDIR}/deploy
