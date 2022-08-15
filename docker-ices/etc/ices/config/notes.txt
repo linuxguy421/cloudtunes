@@ -1,1 +1,0 @@
-xmllint --xpath '//ices/stream/metadata/description/text()' default0.xml

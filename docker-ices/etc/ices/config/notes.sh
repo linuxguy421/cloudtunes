@@ -20,6 +20,7 @@ ICES_STREAM_INPUT_MODULE_TYPE=`xmlstarlet sel -T -t -m /ices/stream/input/module
 printf "You are listening to ${ICES_STREAM_METADATA_NAME}: ${ICES_STREAM_METADATA_DESCRIBE}\n"
 printf "You are using module ${ICES_STREAM_INPUT_MODULE} which is of type ${ICES_STREAM_INPUT_MODULE_TYPE}\n"
 exit 0
+#### XML ####
         <input>
             <module>playlist</module>
             <param name="type">basic</param>
