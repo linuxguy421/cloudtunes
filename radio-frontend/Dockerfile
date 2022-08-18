@@ -294,6 +294,9 @@ RUN /usr/bin/yarn add jplayer
 # Install Album Art
 RUN /usr/bin/yarn add album-art
 
+# Install Butterchurn
+#RUN /usr/bin/yarn add butterchurn butterchurn-presets
+
 # Add Scripts
 ADD scripts/start.sh /start.sh
 ADD scripts/pull /usr/bin/pull
