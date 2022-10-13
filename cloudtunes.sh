@@ -7,7 +7,7 @@ REGISTRY_PORT="5000"
 # Uncomment if you do not want CloudTunes Docker to build from cache
 #DOCKER_NO_CACHE="--no-cache"
 
-# Leave this alone.
+# Leave this alone unless you know what you are doing.
 K8S_CONTEXT="minikube"
 
 # Namespace and option to launch after builds
@@ -58,11 +58,11 @@ while test $# -gt 0; do
 					echo "-L, --listen		Launch radio station in MPV"
 					echo "-Lg			Launch radio station in MPV with FFmpeg visuals"
 					echo "-Lc			Launch radio station in MPV with cli-visualizer (https://github.com/dpayne/cli-visualizer)"
-					echo "--use-sysdocker		Bypass enviornment checking"
+					echo "-S, --use-sysdocker	Bypass enviornment checking"
 					echo "-v, --version		Show version"
 					exit 0
 					;;
-			--use-sysdocker)
+			-S|--use-sysdocker)
 					ENV_SKIP=1
 					shift
 					;;
