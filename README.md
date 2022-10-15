@@ -15,13 +15,13 @@ Create a ```playlist``` folder in ```docker-ices/etc/ices``` and ```touch playli
 
 #### Easy Method 
 
-The easy way is to use the included buildRadio.sh script, see how to use it with:
+The easy way is to use the included cloudtunes.sh bash script, see how to use it with:
 
-```./buildRadio.sh -h```
+```./cloudtunes.sh -h```
 
 To build the entire project and launch it:
 
-```./buildRadio.sh -F```
+```./cloudtunes.sh -F```
 
 #### Manual Method
 
