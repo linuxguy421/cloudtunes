@@ -20,7 +20,7 @@ $(document).ready(function(){
 
 	var stream = {
 		title: "Demo Radio Station",
-		oga: "http://192.168.49.2:30420/default0.ogg"
+		oga: "http://192.168.39.99:30420/default0.ogg"
 	},
 	ready = false;
 
