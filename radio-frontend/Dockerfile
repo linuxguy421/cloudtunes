@@ -289,13 +289,13 @@ RUN cp /usr/local/etc/php/php.ini-development /usr/local/etc/php/php.ini && \
 RUN apk add --no-cache nodejs npm yarn
 
 # Install jPlayer
-RUN /usr/bin/yarn add jplayer
+#RUN /usr/bin/yarn add jplayer
+
+# Install plyr
+RUN /usr/bin/yarn add plyr
 
 # Install Album Art
 RUN /usr/bin/yarn add album-art
-
-# Install Butterchurn
-RUN /usr/bin/yarn add butterchurn butterchurn-presets
 
 # Add Scripts
 ADD scripts/start.sh /start.sh

@@ -30,10 +30,12 @@ function version() {
 	printf "CloudTunes ${CTVERSION}\n"
 }
 
+# Check environment
 function check_env() {
 	[ -z ${DOCKER_HOST} ] && { printf "To use your local docker environment, use the --use-sysdocker flag!\nTo use the minikube docker environment, use 'eval \$(minikube docker-env)'\n"; exit 1; }
 }
 
+# Switch namespace
 function switchNS {
 	kubectx ${K8S_CONTEXT}
 	kubens ${LAUNCH_NAMESPACE}
@@ -41,7 +43,7 @@ function switchNS {
 
 # Create namespace
 function createNS {
-kubectl create ns ${LAUNCH_NAMESPACE} && switchNS
+	kubectl create ns ${LAUNCH_NAMESPACE} && switchNS
 }
 
 while test $# -gt 0; do
