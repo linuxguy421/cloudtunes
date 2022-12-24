@@ -1,8 +1,8 @@
 <?php
 error_reporting(0);
 $m = new Memcached();
-$m->addServer('192.168.39.22', 31211) or die ("Cannot connect to memcached!");
-$json = file_get_contents("http://192.168.39.22:30420/status-json.xsl");
+$m->addServer('192.168.39.40', 31211) or die ("Cannot connect to memcached!");
+$json = file_get_contents("http://192.168.39.40:30420/status-json.xsl");
 $parsed_json = json_decode($json);
 $art = $parsed_json->{'icestats'}->{'source'}->{'artist'};
 $title = $parsed_json->{'icestats'}->{'source'}->{'title'};
@@ -16,7 +16,7 @@ $cacheGenre = $m->get('genre');
 $cacheBitrate = $m->get('bitrate');
 $cacheDescription = $m->get('description');
 //$cacheAlbum = $m->get('album');
-$string = file_get_contents("http://192.168.39.22:30420/status-json.xsl");
+$string = file_get_contents("http://192.168.39.40:30420/status-json.xsl");
 $json_a = json_decode($string, true);
 
 if ( $title != $cacheTitle OR $cacheTitle == null) {
@@ -41,7 +41,7 @@ if ( $title != $cacheTitle OR $cacheTitle == null) {
 
 // Check for advertisements, prefix Title with AD:
 if ( $cacheGenre == 'Advertisement') {
-	$cacheTitle = 'AD - ' . $cacheTitle;
+	$cacheTitle = 'This is an Advertisement' . $cacheTitle;
 }
 
 // Output

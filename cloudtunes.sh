@@ -46,6 +46,11 @@ function createNS {
 	kubectl create ns ${LAUNCH_NAMESPACE} && switchNS
 }
 
+function updateIP {
+	printf "Updating IP address...\n"
+	find . -name '*.php' -type f -exec sed -i -E "s/([0-9]{1,3}\.){3}[0-9]{1,3}/`minikube ip`/" {} \;
+}
+
 while test $# -gt 0; do
 		case "$1" in
 			-h|--help)
@@ -96,6 +101,7 @@ while test $# -gt 0; do
 			-l|--launch)
 					[[ $ENV_SKIP = "1" ]] || check_env
 					switchNS
+					updateIP
 					for MDIR in `ls -d */`; do
 						kubectl create -f ${MDIR}/deploy/
 					done
