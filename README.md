@@ -65,7 +65,5 @@ You can deploy the images to Kubernetes with the command:
 - Modify configuration files to act as templates
 - Modify configuration files to allow multiple stations per icecast server
 - Create audio/video Advertisement abilities
+- YouTube radio mode
 
-**SCREENSHOT**
-
-~~~![Alt text](https://cloudtunes.us/cloudtunes-ss.png)~~~
