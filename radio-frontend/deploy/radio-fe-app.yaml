@@ -33,13 +33,13 @@ metadata:
   namespace: radio
   name: radio-fe-app
 spec:
-  type: LoadBalancer
+  type: NodePort
   clusterIP: 10.96.0.100
   ports:
     - protocol: TCP
       name: http
       port: 80
+      nodePort: 30404
       targetPort: 80
   selector:
     app: radio-fe-app
----
