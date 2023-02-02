@@ -1,5 +1,6 @@
 #!/bin/bash
 
+SKIP_CHOWN="true"
 # Disable Strict Host checking for non interactive git clones
 
 mkdir -p -m 0700 /root/.ssh
@@ -41,43 +42,6 @@ fi
 if [ ! -z "$GIT_NAME" ]; then
  git config --global user.name "$GIT_NAME"
  git config --global push.default simple
-fi
-
-# Dont pull code down if the .git folder exists
-if [ ! -d "/var/www/html/.git" ]; then
- # Pull down code from git for our site!
- if [ ! -z "$GIT_REPO" ]; then
-   # Remove the test index file if you are pulling in a git repo
-   if [ ! -z ${REMOVE_FILES} ] && [ ${REMOVE_FILES} == 0 ]; then
-     echo "skiping removal of files"
-   else
-     rm -Rf /var/www/html/*
-   fi
-   GIT_COMMAND='git clone '
-   if [ ! -z "$GIT_BRANCH" ]; then
-     GIT_COMMAND=${GIT_COMMAND}" -b ${GIT_BRANCH}"
-   fi
-
-   if [ -z "$GIT_USERNAME" ] && [ -z "$GIT_PERSONAL_TOKEN" ]; then
-     GIT_COMMAND=${GIT_COMMAND}" ${GIT_REPO}"
-   else
-    if [[ "$GIT_USE_SSH" == "1" ]]; then
-      GIT_COMMAND=${GIT_COMMAND}" ${GIT_REPO}"
-    else
-      GIT_COMMAND=${GIT_COMMAND}" https://${GIT_USERNAME}:${GIT_PERSONAL_TOKEN}@${GIT_REPO}"
-    fi
-   fi
-   ${GIT_COMMAND} /var/www/html || exit 1
-   if [ ! -z "$GIT_TAG" ]; then
-     git checkout ${GIT_TAG} || exit 1
-   fi
-   if [ ! -z "$GIT_COMMIT" ]; then
-     git checkout ${GIT_COMMIT} || exit 1
-   fi
-   if [ -z "$SKIP_CHOWN" ]; then
-     chown -Rf nginx.nginx /var/www/html
-   fi
- fi
 fi
 
 # Enable custom nginx config files if they exist
