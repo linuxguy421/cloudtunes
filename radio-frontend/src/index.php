@@ -23,7 +23,7 @@ $("#plyr-box").load(location.href + " #plyr-box");
 <body>
 <div id="plyr_container_1" class="plyr-audio">
 <audio id="player" controls>
-  <source src="http://192.168.39.45:30420/default0.ogg" type="audio/ogg" />
+  <source src="http://192.168.39.213:30420/default0.ogg" type="audio/ogg" />
 </audio>
 </div>
 <div id="plyr_container_1" class="plyr-audio">

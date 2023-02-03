@@ -105,6 +105,10 @@ while test $# -gt 0; do
 					for MDIR in `ls -d */`; do
 						kubectl create -f ${MDIR}/deploy/
 					done
+					printf "╒════════════════════════════════════════════════════════════╕\n"
+					printf "│ Frontend $(minikube service -n radio radio-fe-app --url)                       │\n"
+					printf "│ Icecast Server $(minikube service -n radio icecast-srv --url)                 │\n"
+					printf "╘════════════════════════════════════════════════════════════╛\n"
 					exit 0
 					;;
 			-d|--destroy)
