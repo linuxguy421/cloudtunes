@@ -39,11 +39,6 @@ if ( $title != $cacheTitle OR $cacheTitle == null) {
 	$m->set('changed', false);
 }
 
-// Check for advertisements, prefix Title with AD:
-if ( $cacheGenre == 'Advertisement') {
-	$cacheTitle = 'This is an Advertisement' . $cacheTitle;
-}
-
 // Output
 print ('<small>' . $cacheDescription . '</small><br>');
 print ('<small>now playing @ ' . $cacheBitrate . 'k:</small><br>');
