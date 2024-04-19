@@ -1,4 +1,4 @@
-FROM ubuntu:18.04
+FROM ubuntu:20.04
 
 MAINTAINER Greg Holthaus "gerg@gerg.me"
 
@@ -11,7 +11,7 @@ RUN apt-get -qq -y update && \
 RUN echo "deb http://download.opensuse.org/repositories/multimedia:/xiph/xUbuntu_18.04/ ./" > /etc/apt/sources.list.d/icecast.list
 
 RUN apt-get -qq -y update && \
-    apt-get -qq -y install icecast2 python-setuptools joe supervisor sudo && \
+    apt-get -y install icecast2 python-setuptools joe supervisor sudo && \
     apt-get clean
 
 VOLUME ["/config", "/var/log/icecast2", "/etc/icecast2"]

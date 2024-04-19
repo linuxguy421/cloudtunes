@@ -14,7 +14,7 @@
         <input>
             <module>playlist</module>
             <param name="type">basic</param>
-            <param name="file">/etc/ices2/playlist/default0.txt</param>
+            <param name="file">/etc/ices/playlist/default0.txt</param>
             <param name="random">1</param>
             <param name="restart-after-reread">0</param>
             <param name="once">0</param>

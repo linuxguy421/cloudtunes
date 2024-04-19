@@ -1,4 +1,6 @@
-FROM ubuntu:18.04
+FROM ubuntu:20.04
+
+ARG DEBIAN_FRONTEND=noninteractive
 
 MAINTAINER Greg Holthaus "<gerg@gerg.me>"
 
@@ -8,12 +10,12 @@ RUN \
 	apt-get -qq -y install ices2 python-setuptools joe supervisor lltag normalize-audio ffmpeg
 
 RUN mkdir -p /var/log/ices
-RUN mkdir -p /etc/ices2
-ADD etc/ices/ /etc/ices2
+RUN mkdir -p /etc/ices
+ADD etc/ices/ /etc/ices
 ADD data/ /data
-RUN /etc/ices2/init_songs.sh
-RUN /etc/ices2/update_songs.sh
-RUN /etc/ices2/process_songs.sh
+RUN /etc/ices/init_songs.sh
+RUN /etc/ices/update_songs.sh
+RUN /etc/ices/process_songs.sh
 
 # Add supervisord conf, bootstrap.sh files
 COPY container-files /
