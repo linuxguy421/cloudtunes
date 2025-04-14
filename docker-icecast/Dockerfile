@@ -1,17 +1,14 @@
-FROM ubuntu:20.04
+FROM debian:latest
 
 MAINTAINER Greg Holthaus "gerg@gerg.me"
 
 ENV DEBIAN_FRONTEND noninteractive
 
 RUN apt-get -qq -y update && \
-    apt-get -y install wget gnupg2 && \
-    wget -qO - http://icecast.org/multimedia-obs.key | apt-key add -
-    
-RUN echo "deb http://download.opensuse.org/repositories/multimedia:/xiph/xUbuntu_18.04/ ./" > /etc/apt/sources.list.d/icecast.list
-
+    apt-get -y install wget gnupg2
+        
 RUN apt-get -qq -y update && \
-    apt-get -y install icecast2 python-setuptools joe supervisor sudo && \
+    apt-get -y install icecast2 python3-setuptools joe supervisor sudo && \
     apt-get clean
 
 VOLUME ["/config", "/var/log/icecast2", "/etc/icecast2"]
