@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# Host IP (Try the internal host IP)
+HOSTIP=`ip route get 1 | awk '{print $7}'`
+
 # Docker registry address and port
 REGISTRY_HOST="localhost"
 REGISTRY_PORT="5000"
@@ -8,20 +11,21 @@ REGISTRY_PORT="5000"
 #DOCKER_NO_CACHE="--no-cache"
 
 # Leave this alone unless you know what you are doing.
-K8S_CONTEXT="minikube"
+K8S_CONTEXT="default"
 
 # Namespace and option to launch after builds
 LAUNCH_NAMESPACE="radio"
 LAUNCH_AFTER_BUILD="false"
 
 # CloudTunes version
-CTVERSION="v0.0.55"
+CTVERSION="v0.0.99"
 
 # Check if all requirements for CloudTunes are met
 command -v docker >/dev/null 2>&1 || { echo >&2 "I require docker but it's not installed.  Aborting."; exit 1; }
 command -v kubectl >/dev/null 2>&1 || { echo >&2 "I require kubtctl but it's not installed.  Aborting."; exit 1; }
 command -v kubectx >/dev/null 2>&1 || { echo >&2 "I require kubectx but it's not installed.  Aborting."; exit 1; }
 command -v kubens >/dev/null 2>&1 || { echo >&2 "I require kubens but it's not installed.  Aborting."; exit 1; }
+command -v k3s >/dev/null 2>&1 || { echo >&2 "This was built for k3s, while I won't require it I thought you'd like to know it's not installed."; exit 1; }
 #command -v docker-buildx >/dev/null 2>&1 || { echo >&2 "I require docker-buildx but it's not installed.  Aborting."; exit 1; }
 command -v mpv >/dev/null 2>&1 || { echo >&2 "I optionally require mpv but it's not installed."; }
 command -v vis >/dev/null 2>&1 || { echo >&2 "I optionally require cli-visualizer but it's not installed."; }
@@ -29,11 +33,6 @@ command -v vis >/dev/null 2>&1 || { echo >&2 "I optionally require cli-visualize
 # CloudTunes begins here
 function version() {
 	printf "CloudTunes ${CTVERSION}\n"
-}
-
-# Check environment
-function check_env() {
-	[ -z ${DOCKER_HOST} ] && { printf "To use your local docker environment, use the --use-sysdocker flag!\nTo use the minikube docker environment, use 'eval \$(minikube docker-env)'\n"; exit 1; }
 }
 
 # Switch namespace
@@ -49,7 +48,27 @@ function createNS {
 
 function updateIP {
 	printf "Updating IP address...\n"
-	find . -name '*.php' -type f -exec sed -i -E "s/([0-9]{1,3}\.){3}[0-9]{1,3}/`minikube ip`/" {} \;
+	# find . -name '*.php' -type f -exec sed -i -E "s/([0-9]{1,3}\.){3}[0-9]{1,3}/`minikube ip`/" {} \;
+	find . -name '*.php' -type f -exec sed -i -E "s/([0-9]{1,3}\.){3}[0-9]{1,3}/${HOSTIP}"/ {} \;
+}
+
+function getPorts {
+	FE_PORT=$(kubectl get service/radio-fe-app -o jsonpath="{.spec.ports[*].nodePort}")
+	ICECASTSRV_PORT=$(kubectl get service/icecast-srv -o jsonpath="{.spec.ports[*].nodePort}")
+	ICESSRV_PORT=$(kubectl get service/ices-station -o jsonpath="{.spec.ports[*].nodePort}")
+}
+
+waitPods(){
+	TIMETOWIPE=10
+	printf "╒═════════════════════╕\n"
+	printf "│ Waiting for pods... │\n"
+	while [ ${TIMETOWIPE} -gt -1 ]; do
+	TIMETOWIPE_PAD=$(printf "%02d" ${TIMETOWIPE})
+	echo -ne ""╘═[$TIMETOWIPE_PAD]════════════════╛"\033[0K\r"
+	[ ${TIMETOWIPE} -eq 0 ] && printf "\n"
+	sleep 1
+	: $((TIMETOWIPE--))
+	done
 }
 
 while test $# -gt 0; do
@@ -59,23 +78,16 @@ while test $# -gt 0; do
 					echo "options:"
 					echo "-h, --help		Its what youre looking at!"
 					echo "-b, --build		(Re)build CloudTunes docker images"
-					echo "-B, --browser		Launch CloudTunes service in browser"
 					echo "-l, --launch		Launch CloudTunes"
 					echo "-d, --destroy		Destroy CloudTunes"
-					echo "-F[B], --full		Destroy, rebuild, then relaunch CloudTunes, and optionally browser"
+					echo "-F, --full		Destroy, rebuild, then relaunch CloudTunes"
 					echo "-L, --listen		Launch radio station in MPV"
 					echo "-Lg			Launch radio station in MPV with FFmpeg visuals"
 					echo "-Lc			Launch radio station in MPV with cli-visualizer (https://github.com/dpayne/cli-visualizer)"
-					echo "-S, --use-sysdocker	Bypass enviornment checking"
 					echo "-v, --version		Show version"
 					exit 0
 					;;
-			-S|--use-sysdocker)
-					ENV_SKIP=1
-					shift
-					;;
 			-b|--build)
-					[[ ${ENV_SKIP} == "1" ]] || check_env
 					createNS
 					switchNS
 					for MDIR in `ls -d */`; do
@@ -84,44 +96,44 @@ while test $# -gt 0; do
 					done
 					shift
 					;;
-			-B|--browser)
-					minikube service -n radio radio-fe-app
-					exit 0
-					;;
 			-L|--listen)
-					mpv $(minikube service -n radio icecast-srv --url)/default0.ogg
+					getPorts
+					mpv http://${HOSTIP}:${ICECASTSRV_PORT}/default0.ogg
 					exit 0
 					;;
 			-Lg)
-					mpv --lavfi-complex='[aid1] asplit [ao] [v] ; [v] showwaves=mode=p2p:split_channels=1,format=rgb0 [vo]' $(minikube service -n radio icecast-srv --url)/default0.ogg
+					getPorts
+					mpv --lavfi-complex='[aid1] asplit [ao] [v] ; [v] showwaves=mode=p2p:split_channels=1,format=rgb0 [vo]' http://${HOSTIP}:${ICECASTSRV_PORT}/default0.ogg
 					exit 0
 					;;
-			-Lc)		mpv --really-quiet $(minikube service -n radio icecast-srv --url)/default0.ogg | vis
+			-Lc)		
+					getPorts
+					mpv --really-quiet http://${HOSTIP}:${ICECASTSRV_PORT}/default0.ogg | vis
 					exit 0
 					;;
 			-l|--launch)
-					[[ $ENV_SKIP = "1" ]] || check_env
 					switchNS
 					updateIP
 					for MDIR in `ls -d */`; do
 						kubectl create -f ${MDIR}/deploy/
 					done
+					getPorts
+					waitPods
 					printf "╒════════════════════════════════════════════════════════════╕\n"
-					printf "│ Frontend $(minikube service -n radio radio-fe-app --url)                       │\n"
-					printf "│ Icecast Server $(minikube service -n radio icecast-srv --url)                 │\n"
-					printf "╘════════════════════════════════════════════════════════════╛\n"
+                                        printf "│ Frontend: ${HOSTIP}:${FE_PORT}                                │\n"
+                                        printf "│ Icecast Server:  ${HOSTIP}:${ICECASTSRV_PORT}                         │\n"
+                                        printf "│ Station Stream:  ${HOSTIP}:${ICESSRV_PORT}                         │\n"
+                                        printf "╘════════════════════════════════════════════════════════════╛\n"
 					exit 0
 					;;
 			-d|--destroy)
-					[[ $ENV_SKIP = "1" ]] || check_env
 					switchNS
 					for MDIR in `ls -d */`; do
 						kubectl delete -f ${MDIR}/deploy/
 					done
 					exit 0
 					;;
-			-F|-FB|--full)
-					[[ $ENV_SKIP = "1" ]] || check_env
+			-F|--full)
 					createNS
 					switchNS
 					for MDIR in `ls -d */`; do
@@ -131,11 +143,6 @@ while test $# -gt 0; do
                                         	kubectl create -f ${MDIR}/deploy/
                                         done
                                         kubectl get po
-                                        if [[ "$1" == "-FB" ]]; then
-                                        	printf "Waiting a few seconds...\n"
-                                        	sleep 5
-                                        	minikube service -n radio radio-fe-app
-                                        fi
                                         exit 0
                                         ;;
 			-v|--version)

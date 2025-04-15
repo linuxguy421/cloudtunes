@@ -1,6 +1,6 @@
 <?php
 $m = new Memcached();
-$m->addServer('192.168.59.101', 31211) or die ("Cannot connect to memcached!");
+$m->addServer('10.10.1.128', 31211) or die ("Cannot connect to memcached!");
 $cacheChanged = $m->get('changed');
 if ( $cacheChanged != false OR $cacheChanged == null) {
     require_once "lastfm.php";

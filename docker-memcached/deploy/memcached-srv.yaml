@@ -27,7 +27,7 @@ metadata:
   name: memcached-srv
 spec:
   type: NodePort
-  clusterIP: 10.96.0.240
+  clusterIP: 10.43.0.220
   ports:
     - protocol: TCP
       name: audio-stream

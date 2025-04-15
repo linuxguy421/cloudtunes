@@ -1,8 +1,5 @@
 # CloudTune
 
-### NOTICE: This is a long-term project being built in Minikube -- you'll
-### need to modify things (such as IP addresses) to work outside of Minikube!
-
 ### Pre-installation
 
 In order for CloudTunes to build properly, you must do the following steps before building:
@@ -58,6 +55,7 @@ You can deploy the images to Kubernetes with the command:
 
 **TODO**
 
+- ~~Abandon Minikube~~
 - Create PVC for OGG files
 - Modify front-end to add OGG files
 - Modify front-end to allow playlist reloads

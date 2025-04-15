@@ -34,7 +34,7 @@ metadata:
   name: radio-fe-app
 spec:
   type: NodePort
-  clusterIP: 10.96.0.100
+  clusterIP: 10.43.0.240
   ports:
     - protocol: TCP
       name: http
@@ -43,3 +43,4 @@ spec:
       targetPort: 80
   selector:
     app: radio-fe-app
+---

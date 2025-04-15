@@ -27,7 +27,7 @@ metadata:
   name: ices-station
 spec:
   type: NodePort
-  clusterIP: 10.96.0.11
+  clusterIP: 10.43.0.210
   ports:
     - protocol: TCP
       name: http
