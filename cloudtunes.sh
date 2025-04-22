@@ -47,9 +47,8 @@ function createNS {
 }
 
 function updateIP {
-	printf "Updating IP address...\n"
-	# find . -name '*.php' -type f -exec sed -i -E "s/([0-9]{1,3}\.){3}[0-9]{1,3}/`minikube ip`/" {} \;
 	find . -name '*.php' -type f -exec sed -i -E "s/([0-9]{1,3}\.){3}[0-9]{1,3}/${HOSTIP}"/ {} \;
+	printf "✔ Updated IP address to "${HOSTIP}"\n"
 }
 
 function getPorts {

@@ -43,19 +43,24 @@
       setInterval(fetchTrackInfo, 15000);
     };
 
-    function fetchTrackInfo() {
-      const $box = $('#now-playing-box');
-      $box.html('<div class="spinner"></div>');
+    let previousUrl = '';
 
+    function fetchTrackInfo() {
       $.get('albumart.php', function (url) {
-        $box.html(`
-          <div class="w-full h-full relative bg-cover bg-center rounded-xl shadow-lg overflow-hidden flex items-end" style="background-image: url('${url}');">
-          <div class="w-full bg-white/80 dark:bg-black/60 backdrop-blur-sm p-4 text-center text-sm">
-          <div id="plyr-nowplaying" class="plyr-title">Loading track info...</div>
-          </div>
-        </div>
-        `);
-        $('#plyr-nowplaying').load('streaminfo.php');
+        if (url !== previousUrl) {
+          previousUrl = url;
+          const $box = $('#now-playing-box');
+          $box.html(`
+            <div class="w-full h-full relative bg-cover bg-center rounded-xl shadow-lg overflow-hidden flex items-end" style="background-image: url('${url}');">
+              <div class="w-full bg-white/80 dark:bg-black/60 backdrop-blur-sm p-4 text-center text-sm">
+                <div id="plyr-nowplaying" class="plyr-title">Loading track info...</div>
+              </div>
+            </div>
+          `);
+          $('#plyr-nowplaying').load('streaminfo.php');
+        } else {
+          $('#plyr-nowplaying').load('streaminfo.php');
+        }
       });
     }
   </script>
