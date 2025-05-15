@@ -25,7 +25,7 @@ command -v docker >/dev/null 2>&1 || { echo >&2 "I require docker but it's not i
 command -v kubectl >/dev/null 2>&1 || { echo >&2 "I require kubtctl but it's not installed.  Aborting."; exit 1; }
 command -v kubectx >/dev/null 2>&1 || { echo >&2 "I require kubectx but it's not installed.  Aborting."; exit 1; }
 command -v kubens >/dev/null 2>&1 || { echo >&2 "I require kubens but it's not installed.  Aborting."; exit 1; }
-command -v k3s >/dev/null 2>&1 || { echo >&2 "This was built for k3s, while I won't require it I thought you'd like to know it's not installed."; }
+command -v k3s >/dev/null 2>&1 || { echo >&2 "If you plan on running this locally, I would recommend k3s, which isn't installed."; }
 #command -v docker-buildx >/dev/null 2>&1 || { echo >&2 "I require docker-buildx but it's not installed.  Aborting."; exit 1; }
 command -v mpv >/dev/null 2>&1 || { echo >&2 "I optionally require mpv but it's not installed."; }
 command -v vis >/dev/null 2>&1 || { echo >&2 "I optionally require cli-visualizer but it's not installed."; }
