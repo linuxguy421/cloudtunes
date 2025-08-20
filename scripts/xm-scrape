@@ -1,0 +1,87 @@
+#!/usr/bin/env python
+
+import requests
+import json
+from urllib.parse import quote_plus
+
+#STATION = "utopia"
+STATION = "90son9"
+API_URL = f"https://xmplaylist.com/api/station/{STATION}"
+HEADERS = {"User-Agent": "Mozilla/5.0"}
+
+YOUTUBE_SEARCH_URL = "https://www.youtube.com/results?search_query={query}"
+
+def fetch_youtube_link(artist, title):
+    try:
+        query = quote_plus(f"{artist} {title}")
+        search_url = YOUTUBE_SEARCH_URL.format(query=query)
+        response = requests.get(search_url, headers=HEADERS, timeout=10)
+        response.raise_for_status()
+
+        html = response.text
+        idx = html.find('/watch?v=')
+        if idx != -1:
+            vid_id = html[idx+9:idx+20]
+            return f"https://www.youtube.com/watch?v={vid_id}"
+        return ""
+    except Exception as e:
+        print(f"YouTube search failed for {artist} - {title}: {e}")
+        return ""
+
+def fetch_api(limit=20):
+    try:
+        response = requests.get(API_URL, headers=HEADERS, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+
+        results = data.get("results") or []
+        if not results:
+            print("No results found in API response")
+            return None
+
+        simplified = []
+        for item in results[:limit]:
+            if item is None:
+                continue
+            track = item.get("track") or {}
+            spotify = item.get("spotify") or {}
+            youtube = item.get("youtube") or {}
+
+            artist_list = track.get("artists") or []
+            title = track.get("title") or ""
+            artist = ", ".join(artist_list)
+
+            # Use YouTube API field if available, otherwise search
+            youtube_link = youtube.get("url")
+            if not youtube_link and artist and title:
+                youtube_link = fetch_youtube_link(artist, title)
+
+            simplified.append({
+                "artist": artist,
+                "title": title,
+                "album": spotify.get("albumName") or "",
+                "youtube": youtube_link or "",
+                "timestamp": item.get("timestamp") or ""
+            })
+
+        return simplified if simplified else None
+    except Exception as e:
+        print(f"API fetch failed: {e}")
+        return None
+
+def main(limit=20):
+    songs = fetch_api(limit=limit)
+
+    if songs:
+        with open("utopia_playlist.json", "w", encoding="utf-8") as f:
+            json.dump(songs, f, ensure_ascii=False, indent=2)
+        print(f"Saved {len(songs)} songs to utopia_playlist.json")
+    else:
+        print("No songs could be scraped.")
+
+if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser(description="Scrape XMPlaylist Utopia songs")
+    parser.add_argument("--limit", type=int, default=20, help="Number of past songs to fetch")
+    args = parser.parse_args()
+    main(limit=args.limit)

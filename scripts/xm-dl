@@ -1,0 +1,34 @@
+#!/usr/bin/env python
+
+import json
+import subprocess
+import os
+
+JSON_FILE = "90son9_playlist.json"
+DOWNLOAD_DIR = "docker-ices/data/station_0"
+
+# Make sure download directory exists
+os.makedirs(DOWNLOAD_DIR, exist_ok=True)
+
+# Read JSON file
+with open(JSON_FILE, "r", encoding="utf-8") as f:
+    songs = json.load(f)
+
+for song in songs:
+    url = song.get("youtube")
+    if not url:
+        print(f"Skipping {song.get('title')} by {song.get('artist')} (no YouTube URL)")
+        continue
+
+    print(f"Downloading audio: {song.get('artist')} - {song.get('title')}")
+    try:
+        subprocess.run([
+            "yt-dlp",
+            "--extract-audio",
+            "--audio-format", "vorbis",
+            "--audio-quality", "5",
+            "-o", os.path.join(DOWNLOAD_DIR, "%(title)s.%(ext)s"),
+            url
+        ], check=True)
+    except subprocess.CalledProcessError as e:
+        print(f"Failed to download {song.get('title')}: {e}")

@@ -13,6 +13,23 @@ function doDownload {
 	#--playlist-items 1:$MAXFILES
 }
 
+extract_playlist() {
+    local json_file="$1"
+
+    if [ ! -f "$json_file" ]; then
+        echo "Error: JSON file '$json_file' not found." >&2
+        return 1
+    fi
+
+    if ! command -v jq &>/dev/null; then
+        echo "Error: jq is required but not installed." >&2
+        return 1
+    fi
+
+    jq -r '.[].youtube_url' "$json_file"
+}
+
+
 while test $# -gt 0; do
 		case "$1" in
 			-h|--help)
@@ -21,11 +38,17 @@ while test $# -gt 0; do
 					echo "pl, playlist [URL]	Download a playlist and convert to OGG files"
 					echo "-m [number]		When in playlist mode, only download # files"
 					echo "dl, download [URL]	Download a single video and convert to OGG"
+					echo "-j, --json [file]		Read a JSON file and download all links"
 					echo "wipe			Wipe all OGG files from $DEFAULT_PATH"
 					exit 0
 					;;
 			wipe)
 					if [ -z "$( ls -A $DEFAULT_PATH )" ]; then echo "Can't wipe what isn't there"; else rm -v $DEFAULT_PATH/*.ogg; fi
+					exit 0
+					;;
+			-j|--json)
+					export plmode="--yes-playlist"
+					extract_playlist
 					exit 0
 					;;
 			pl|playlist)
