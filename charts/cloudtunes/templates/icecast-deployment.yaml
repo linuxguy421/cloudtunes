@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-icecast
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: icecast
+  template:
+    metadata:
+      labels:
+        app: icecast
+    spec:
+      containers:
+        - name: icecast
+          image: {{ .Values.icecast.image }}
+          ports:
+            - containerPort: {{ .Values.icecast.ports.http }}
+          env:
+            - name: ICECAST_ADMIN_PASSWORD
+              value: {{ .Values.icecast.adminPassword | quote }}
+            - name: ICECAST_SOURCE_PASSWORD
+              value: {{ .Values.icecast.sourcePassword | quote }}
+            - name: ICECAST_RELAY_PASSWORD
+              value: {{ .Values.icecast.relayPassword | quote }}

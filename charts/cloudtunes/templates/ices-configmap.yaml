@@ -1,0 +1,18 @@
+{{- range .Values.ices.stations }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $.Release.Name }}-ices-{{ .name }}-playlist
+data:
+  playlist.txt: |
+{{ .playlist | indent 4 }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $.Release.Name }}-ices-{{ .name }}-config
+data:
+  config.xml: |
+{{ .config | indent 4 }}
+---
+{{- end }}

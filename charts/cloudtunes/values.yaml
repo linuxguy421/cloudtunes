@@ -1,0 +1,46 @@
+icecast:
+  image: your-registry/icecast:latest
+  adminPassword: "changeme"
+  sourcePassword: "changeme"
+  relayPassword: "changeme"
+  ports:
+    http: 8000
+
+ices:
+  image: your-registry/ices:latest
+  stations:
+    - name: station0
+      mount: /stream0
+      playlist: |
+        # playlist0.txt
+        /music/song1.ogg
+        /music/song2.ogg
+      config: |
+        <ices>
+          <stream>
+            <mount>/stream0</mount>
+            <bitrate>128</bitrate>
+          </stream>
+        </ices>
+    - name: station1
+      mount: /stream1
+      playlist: |
+        # playlist1.txt
+        /music/song3.ogg
+        /music/song4.ogg
+      config: |
+        <ices>
+          <stream>
+            <mount>/stream1</mount>
+            <bitrate>192</bitrate>
+          </stream>
+        </ices>
+
+frontend:
+  image: your-registry/frontend:latest
+  replicas: 2
+  servicePort: 80
+
+memcached:
+  image: memcached:1.6
+  replicas: 1

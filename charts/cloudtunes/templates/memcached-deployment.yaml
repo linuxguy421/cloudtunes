@@ -1,0 +1,18 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-memcached
+spec:
+  replicas: {{ .Values.memcached.replicas }}
+  selector:
+    matchLabels:
+      app: memcached
+  template:
+    metadata:
+      labels:
+        app: memcached
+    spec:
+      containers:
+        - name: memcached
+          image: {{ .Values.memcached.image }}
+          args: ["-m", "64", "-p", "11211"]

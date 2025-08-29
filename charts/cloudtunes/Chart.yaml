@@ -1,0 +1,6 @@
+apiVersion: v2
+name: cloudtunes
+description: A Helm chart for deploying CloudTunes (Icecast, Ices stations, frontend, memcached)
+type: application
+version: 0.1.0
+appVersion: "1.0"

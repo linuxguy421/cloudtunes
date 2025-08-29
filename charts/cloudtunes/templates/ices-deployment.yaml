@@ -1,0 +1,36 @@
+{{- range .Values.ices.stations }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $.Release.Name }}-ices-{{ .name }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ices
+      station: {{ .name }}
+  template:
+    metadata:
+      labels:
+        app: ices
+        station: {{ .name }}
+    spec:
+      containers:
+        - name: ices
+          image: {{ $.Values.ices.image }}
+          volumeMounts:
+            - name: playlist
+              mountPath: /ices/playlist
+              subPath: playlist.txt
+            - name: config
+              mountPath: /ices/config
+              subPath: config.xml
+      volumes:
+        - name: playlist
+          configMap:
+            name: {{ $.Release.Name }}-ices-{{ .name }}-playlist
+        - name: config
+          configMap:
+            name: {{ $.Release.Name }}-ices-{{ .name }}-config
+---
+{{- end }}
