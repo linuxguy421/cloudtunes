@@ -28,8 +28,8 @@ Stations are defined declaratively in `values.yaml` and mounted into pods using 
 
 1. **Clone this repository**
    ```bash
-   git clone https://github.com/your-org/cloudtunes-helm.git
-   cd cloudtunes-helm/charts/cloudtunes
+   git clone https://github.com/linuxguy421/cloudtunes.git
+   cd cloudtunes/charts/cloudtunes
    ```
 
 2. **Inspect `values.yaml`**
