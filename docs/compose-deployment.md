@@ -69,3 +69,8 @@ Do not use docker compose down -v for routine updates or shutdowns; it removes t
 ## Scope and known limitations
 
 This is the first deployment foundation, not the final management workflow. The existing Dockerfiles retain their current base images and build steps. The Icecast/Ices configuration still contains the existing source password, and the external Last.fm integration retains its existing configuration. Those concerns are planned for the configuration/reliability phase. The frontend now accepts Compose service URLs through environment variables while retaining Kubernetes service-name defaults when those variables are not set.
+
+
+## Audio player dependency
+
+The frontend uses the Video.js 10 audio-neutral preset from a version-pinned jsDelivr CDN bundle. This avoids installing browser-player packages during the PHP image build and removes the deprecated Plyr Yarn dependency that failed under the image's Node.js 16 runtime. The browser must be able to reach jsDelivr to load the player UI; the underlying Icecast audio URL must also be reachable from the listener's browser.
