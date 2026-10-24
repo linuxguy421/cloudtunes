@@ -2,7 +2,7 @@
 
 **Status:** Initial repository review only; live runtime checks remain unverified.
 **Scope:** Documentation and safe observation. No application/runtime changes.
-**Related:** [Architecture proposal](../architecture/multi-tenant-platform.md) and [open Compose PR #2](https://github.com/linuxguy421/cloudtunes/pull/2).
+**Related:** [Architecture proposal in draft PR #3](https://github.com/linuxguy421/cloudtunes/blob/docs/multitenant-architecture-plan/docs/architecture/multi-tenant-platform.md) and [open Compose PR #2](https://github.com/linuxguy421/cloudtunes/pull/2).
 
 ## 1. Guardrails
 
