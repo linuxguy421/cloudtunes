@@ -1,0 +1,67 @@
+services:
+  icecast:
+    build:
+      context: ./docker-icecast
+    restart: unless-stopped
+    ports:
+      - "${ICECAST_PORT:-8000}:8000"
+    volumes:
+      - icecast-config:/etc/icecast2
+    networks:
+      - cloudtunes
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8000/status-json.xsl || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  ices:
+    build:
+      context: ./docker-ices
+    restart: unless-stopped
+    depends_on:
+      icecast:
+        condition: service_healthy
+    volumes:
+      - music-data:/data
+      - ices-playlists:/etc/ices/playlist
+      - ices-config:/etc/ices/config
+    networks:
+      - cloudtunes
+
+  memcached:
+    build:
+      context: ./docker-memcached
+    restart: unless-stopped
+    networks:
+      - cloudtunes
+
+  frontend:
+    build:
+      context: ./radio-frontend
+    restart: unless-stopped
+    depends_on:
+      icecast:
+        condition: service_healthy
+      memcached:
+        condition: service_started
+    environment:
+      MEMCACHED_HOST: memcached
+      MEMCACHED_PORT: "11211"
+      ICECAST_STATUS_URL: http://icecast:8000/status-json.xsl
+      ICECAST_PUBLIC_URL: ${ICECAST_PUBLIC_URL:-http://localhost:8000}
+    ports:
+      - "${WEB_PORT:-8080}:80"
+    networks:
+      - cloudtunes
+
+networks:
+  cloudtunes:
+    driver: bridge
+
+volumes:
+  icecast-config:
+  music-data:
+  ices-playlists:
+  ices-config:
