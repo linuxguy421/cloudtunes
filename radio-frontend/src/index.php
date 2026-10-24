@@ -56,13 +56,13 @@ $icecastPublicUrl = rtrim(getenv('ICECAST_PUBLIC_URL') ?: 'http://localhost:8000
           $box.html(`
             <div class="w-full h-full relative bg-cover bg-center rounded-xl shadow-lg overflow-hidden flex items-end" style="background-image: url('${url}');">
               <div class="w-full bg-white/80 dark:bg-black/60 backdrop-blur-sm p-4 text-center text-sm">
-                <div id="plyr-nowplaying" class="plyr-title">Loading track info...</div>
+                <div id="now-playing-info" class="now-playing-title">Loading track info...</div>
               </div>
             </div>
           `);
-          $('#plyr-nowplaying').load('streaminfo.php');
+          $('#now-playing-info').load('streaminfo.php');
         } else {
-          $('#plyr-nowplaying').load('streaminfo.php');
+          $('#now-playing-info').load('streaminfo.php');
         }
       });
     }
