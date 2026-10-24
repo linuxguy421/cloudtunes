@@ -11,7 +11,7 @@ $icecastPublicUrl = rtrim(getenv('ICECAST_PUBLIC_URL') ?: 'http://localhost:8000
   <script>
     tailwind.config = { darkMode: 'class' };
   </script>
-  <link href="dist/skin/plyr/plyr.css" rel="stylesheet" />
+  <script type="module" src="https://cdn.jsdelivr.net/npm/@videojs/cdn@10.2.0/audio-neutral.js"></script>
   <script src="lib/jquery.min.js"></script>
   <style>
     .spinner {
@@ -80,10 +80,13 @@ $icecastPublicUrl = rtrim(getenv('ICECAST_PUBLIC_URL') ?: 'http://localhost:8000
 
     <!-- Audio Player -->
     <div class="bg-gray-100 dark:bg-gray-800 rounded-xl shadow-lg p-4">
-      <audio id="player" controls class="w-full">
-        <source src="<?= htmlspecialchars($icecastPublicUrl, ENT_QUOTES, 'UTF-8') ?>/default0.ogg" type="audio/ogg" />
-        Your browser does not support the audio element.
-      </audio>
+      <audio-player class="block w-full">
+        <audio-neutral-skin>
+          <audio src="<?= htmlspecialchars($icecastPublicUrl, ENT_QUOTES, 'UTF-8') ?>/default0.ogg" preload="none">
+            Your browser does not support HTML audio playback.
+          </audio>
+        </audio-neutral-skin>
+      </audio-player>
     </div>
 
     <!-- Now Playing (Album Art + Track Info) -->
