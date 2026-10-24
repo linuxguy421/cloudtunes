@@ -146,3 +146,29 @@ Mark each item complete only with evidence from the actual target environment.
 Phase 0 is complete when the baseline has been captured, backup/restore evidence exists, credential remediation has a reviewed runbook, a rollback path is understood, and a test environment is ready.
 
 This phase does not add PostgreSQL, accounts, station APIs, a controller, quotas, or a new playback engine. It does not replace PHP/Nginx, Icecast, or Ices, upgrade base images, or change the Compose volume model. Those are subsequent reviewed changes.
+
+
+## 10. Operator log snapshot — 2026-10-24
+
+The operator supplied a 30-minute log excerpt from the running Compose deployment. This section records only what that excerpt demonstrates; it is not a full stream-health test.
+
+- **Icecast:** Supervisor started `icecast2`, which entered `RUNNING` state. Icecast warned that `<location>` and `<admin>` contact were not configured. The log does not establish whether a source is connected.
+- **Ices:** Supervisor started `ices`; it exited with status 0 and was repeatedly respawned roughly every nine seconds. This is consistent with an Ices background/daemon-mode mismatch with Supervisor, but the effective runtime configuration and process command still need to be checked before assigning root cause.
+- **Frontend:** PHP-FPM and Nginx entered `RUNNING` state. Startup logged a missing `/etc/TZ` file, no files matching `/etc/supervisor/conf.d/*.conf`, and a Supervisor local Unix HTTP server without authentication. The operational impact of the first two messages is not yet established; the unauthenticated local control interface should be reviewed for exposure and privilege boundaries.
+- **Initialization:** Icecast and Ices logged that `/config/init/` did not exist. Inspect the entrypoint/bootstrap logic to determine whether this directory is optional or its absence skips initialization.
+
+### Next read-only checks
+
+Run these against the current deployment before restarting or rebuilding anything:
+
+```bash
+docker compose ps
+docker compose exec ices sh -lc 'ps -ef; grep -nE "<background>|<file>|<mount>|<hostname>|<port>" /etc/ices/config/default0.xml'
+docker compose exec ices sh -lc 'cat /etc/supervisor.d/supervisord-ices.conf'
+docker compose exec icecast sh -lc 'wget -qO- http://127.0.0.1:8000/status-json.xsl'
+docker inspect "$(docker compose ps -q ices)" --format '{{json .Mounts}}'
+```
+
+Before sharing command output, redact any credentials or sensitive host details. The XML filter deliberately avoids password fields. If the runtime XML is at a different path, list filenames under `/etc/ices/config` and inspect the applicable file with password lines omitted.
+
+**Do not change `<background>`, delete/recreate volumes, or restart the stack yet.** First compare the effective XML with the checked-in file and confirm whether Icecast reports the expected source/mount. If the status output has no source, that confirms no active source was reported at the time of the check; it still does not explain why Ices exits.
