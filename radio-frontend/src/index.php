@@ -1,3 +1,6 @@
+<?php
+$icecastPublicUrl = rtrim(getenv('ICECAST_PUBLIC_URL') ?: 'http://localhost:8000', '/');
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -78,7 +81,7 @@
     <!-- Audio Player -->
     <div class="bg-gray-100 dark:bg-gray-800 rounded-xl shadow-lg p-4">
       <audio id="player" controls class="w-full">
-        <source src="http://10.10.1.128:30420/default0.ogg" type="audio/ogg" />
+        <source src="<?= htmlspecialchars($icecastPublicUrl, ENT_QUOTES, 'UTF-8') ?>/default0.ogg" type="audio/ogg" />
         Your browser does not support the audio element.
       </audio>
     </div>
