@@ -285,17 +285,9 @@ RUN cp /usr/local/etc/php/php.ini-development /usr/local/etc/php/php.ini && \
 	    -e "s/;zend_extension=opcache/zend_extension=opcache/g" \
             /usr/local/etc/php/php.ini
 
-# Install NodeJS, NPM, Yarn
-RUN apk add --no-cache nodejs npm yarn
-
-# Install jPlayer
-#RUN /usr/bin/yarn add jplayer
-
-# Install plyr
-RUN /usr/bin/yarn add plyr
-
-# Install Album Art
-RUN /usr/bin/yarn add album-art
+# The frontend uses Video.js 10 from its pinned browser CDN bundle.
+# The unused Plyr and album-art Yarn dependencies were removed; no Node.js
+# runtime is needed in this image for the current frontend.
 
 # Add Scripts
 ADD scripts/start.sh /start.sh
