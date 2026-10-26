@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <ices>
-    <background>1</background>
+    <background>0</background>
     <logpath>/var/log/ices</logpath>
     <logfile>ices.log</logfile>
     <loglevel>4</loglevel>
