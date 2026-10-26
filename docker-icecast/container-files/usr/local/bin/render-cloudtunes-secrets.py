@@ -51,6 +51,12 @@ def render_icecast() -> None:
     account = pwd.getpwnam("icecast2")
     group = grp.getgrnam("icecast2")
     os.chown(target, account.pw_uid, group.gr_gid)
+    # Remove legacy credential values from the persistent config volume after
+    # the complete runtime configuration has been written successfully.
+    sanitized = source.read_text(encoding="utf-8")
+    for tag in ("source-password", "relay-password", "admin-password"):
+        sanitized = replace_tag(sanitized, tag, "__SET_AT_STARTUP__", str(source))
+    source.write_text(sanitized, encoding="utf-8")
 
 
 def render_ices() -> None:
@@ -62,6 +68,15 @@ def render_ices() -> None:
     target = Path("/run/ices-default0.xml")
     target.write_text(config, encoding="utf-8")
     os.chmod(target, 0o600)
+    # The named config volume may contain a legacy hardcoded password.
+    # Replace it only after the runtime config is ready.
+    sanitized = replace_tag(
+        source.read_text(encoding="utf-8"),
+        "password",
+        "__SET_AT_STARTUP__",
+        str(source),
+    )
+    source.write_text(sanitized, encoding="utf-8")
 
 
 if len(sys.argv) != 2 or sys.argv[1] not in {"icecast", "ices"}:
