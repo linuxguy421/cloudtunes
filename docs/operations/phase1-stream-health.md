@@ -14,10 +14,9 @@ A successful check is stronger than an HTTP status response alone, but it does n
 Requirements: Bash, curl, and jq. Run from a host that can reach the Icecast endpoints.
 
 ```bash
-chmod +x scripts/check-stream.sh
 ICECAST_STATUS_URL=http://localhost:8400/status-json.xsl \
 ICECAST_STREAM_URL=http://localhost:8400/default0.ogg \
-./scripts/check-stream.sh
+bash scripts/check-stream.sh
 ```
 
 Adjust the host and port to match the deployment. Defaults target Icecast at `localhost:8000`.
