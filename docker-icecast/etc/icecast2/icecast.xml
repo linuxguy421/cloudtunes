@@ -25,13 +25,13 @@
 
     <authentication>
         <!-- Sources log in with username 'source' -->
-        <source-password>dr!pepper83</source-password>
+        <source-password>__SET_AT_STARTUP__</source-password>
         <!-- Relays log in username 'relay' -->
-        <relay-password>dr!pepper83</relay-password>
+        <relay-password>__SET_AT_STARTUP__</relay-password>
 
         <!-- Admin logs in with the username given below -->
         <admin-user>admin</admin-user>
-        <admin-password>dr!pepper83</admin-password>
+        <admin-password>__SET_AT_STARTUP__</admin-password>
     </authentication>
 
     <!-- set the mountpoint for a shoutcast source to use, the default if not
@@ -68,7 +68,7 @@
     <!--<master-server>127.0.0.1</master-server>-->
     <!--<master-server-port>8001</master-server-port>-->
     <!--<master-update-interval>120</master-update-interval>-->
-    <!--<master-password>dr!pepper83</master-password>-->
+    <!--<master-password>NOT_USED_IN_THIS_CONFIG</master-password>-->
 
     <!-- setting this makes all relays on-demand unless overridden, this is
          useful for master relays which do not have <relay> definitions here.
@@ -93,7 +93,7 @@
         <mount-name>/example-complex.ogg</mount-name>
 
         <username>othersource</username>
-        <password>hackmemore</password>
+        <password>NOT_USED_IN_THIS_CONFIG</password>
 
         <max-listeners>1</max-listeners>
         <dump-file>/tmp/dump-example1.ogg</dump-file>

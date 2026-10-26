@@ -22,7 +22,7 @@
         <instance>
             <hostname>icecast</hostname>
             <port>8000</port>
-            <password>dr!pepper83</password>
+            <password>__SET_AT_STARTUP__</password>
             <mount>/default0.ogg</mount>
             <reconnectdelay>2</reconnectdelay>
             <reconnectattempts>5</reconnectattempts> 

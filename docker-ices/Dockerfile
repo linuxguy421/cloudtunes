@@ -17,10 +17,10 @@ RUN /etc/ices/init_songs.sh
 RUN /etc/ices/update_songs.sh
 RUN /etc/ices/process_songs.sh
 
-# Add supervisord conf, bootstrap.sh files
+# Add supervisor configuration and runtime scripts.
 COPY container-files /
 COPY supervisord-ices.conf /etc/supervisor.d/supervisord-ices.conf
+RUN chmod 0755 /usr/local/bin/cloudtunes-entrypoint
 
-# Expose ports for radio station
 EXPOSE 8001
-ENTRYPOINT ["/config/bootstrap.sh"]
+ENTRYPOINT ["/usr/local/bin/cloudtunes-entrypoint"]
