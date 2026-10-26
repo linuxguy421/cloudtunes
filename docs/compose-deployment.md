@@ -24,7 +24,7 @@ This is the initial Compose deployment path. The existing Kubernetes manifests r
 5. Build the Ices image and seed the persistent music volume before starting the stack:
 
     docker compose build ices
-    docker compose run --rm --no-deps -v "$PWD/docker-ices/data:/import:ro" --entrypoint /bin/sh ices -c 'mkdir -p /data/station_0 && find /import/station_0 -type f -name "*.ogg" -exec cp -n -- {} /data/station_0/ \\;'
+    docker compose run --rm --no-deps -v "$PWD/docker-ices/data:/import:ro" --entrypoint /bin/sh ices -c 'mkdir -p /data/station_0 && find /import/station_0 -type f -name "*.ogg" -exec cp -n -- {} /data/station_0/ +'
 
    This copies `.ogg` files into the named volume without overwriting files already present. It does not transcode or alter source files. If the source directory contains no `.ogg` files, add supported files before continuing.
 
@@ -79,7 +79,9 @@ Do not use docker compose down -v for routine updates or shutdowns; it removes t
 
 ## Scope and known limitations
 
-This is the first deployment foundation, not the final management workflow. The existing Dockerfiles retain their current base images and build steps. The Compose configuration now expects file-backed local secrets for the Icecast source, relay, and admin credentials and the Ices source credential. Run the initializer above before starting. These local files are not encrypted at rest; protect the host and backups. Existing named configuration volumes can differ from repository files, so the secret-rendering change must be validated against a backup in an isolated deployment before a live rollout. The external Last.fm integration retains its existing configuration. The frontend now accepts Compose service URLs through environment variables while retaining Kubernetes service-name defaults when those variables are not set.
+This is the first deployment foundation, not the final management workflow. This change removes media mutation from image builds and makes playlist generation a runtime operation. It does not redesign the legacy conversion/transcoding workflow, change Ices process supervision, or migrate existing named volumes. Existing volumes are preserved, but the next Ices container start rebuilds `default0.txt` from `.ogg` files present in `music-data`. Back up persistent data before deployment changes and verify the stream after recreating Ices.
+
+The Compose configuration expects file-backed local secrets for the Icecast source, relay, and admin credentials and the Ices source credential. Run the initializer above before starting. These local files are not encrypted at rest; protect the host and backups. Existing named configuration volumes can differ from repository files, so the secret-rendering change must be validated against a backup in an isolated deployment before a live rollout. The external Last.fm integration retains its existing configuration. The frontend now accepts Compose service URLs through environment variables while retaining Kubernetes service-name defaults when those variables are not set.
 
 
 ## Audio player dependency
