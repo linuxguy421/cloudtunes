@@ -20,7 +20,7 @@
             <param name="once">0</param>
         </input>
         <instance>
-            <hostname>icecast-srv</hostname>
+            <hostname>icecast</hostname>
             <port>8000</port>
             <password>dr!pepper83</password>
             <mount>/default0.ogg</mount>
