@@ -5,6 +5,10 @@ services:
     restart: unless-stopped
     ports:
       - "${ICECAST_PORT:-8000}:8000"
+    secrets:
+      - icecast_source_password
+      - icecast_relay_password
+      - icecast_admin_password
     volumes:
       - icecast-config:/etc/icecast2
     networks:
@@ -23,6 +27,8 @@ services:
     depends_on:
       icecast:
         condition: service_healthy
+    secrets:
+      - ices_source_password
     volumes:
       - music-data:/data
       - ices-playlists:/etc/ices/playlist
@@ -55,6 +61,16 @@ services:
       - "${WEB_PORT:-8080}:80"
     networks:
       - cloudtunes
+
+secrets:
+  icecast_source_password:
+    file: ./secrets/icecast_source_password
+  ices_source_password:
+    file: ./secrets/ices_source_password
+  icecast_relay_password:
+    file: ./secrets/icecast_relay_password
+  icecast_admin_password:
+    file: ./secrets/icecast_admin_password
 
 networks:
   cloudtunes:
