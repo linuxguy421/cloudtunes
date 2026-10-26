@@ -46,11 +46,10 @@ def render_icecast() -> None:
     target = Path("/run/icecast.xml")
     target.write_text(config, encoding="utf-8")
     os.chmod(target, 0o640)
-    import grp
     import pwd
     account = pwd.getpwnam("icecast2")
-    group = grp.getgrnam("icecast2")
-    os.chown(target, account.pw_uid, group.gr_gid)
+    # Use the account's primary GID rather than assuming a group name.
+    os.chown(target, account.pw_uid, account.pw_gid)
     # Remove legacy credential values from the persistent config volume after
     # the complete runtime configuration has been written successfully.
     sanitized = source.read_text(encoding="utf-8")
