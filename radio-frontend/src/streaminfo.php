@@ -1,8 +1,11 @@
 <?php
 error_reporting(0);
 $m = new Memcached();
-$m->addServer('10.10.1.128', 31211) or die ("Cannot connect to memcached!");
-$json = file_get_contents("http://10.10.1.128:30420/status-json.xsl");
+$memcachedHost = getenv('MEMCACHED_HOST') ?: 'memcached-srv';
+$memcachedPort = (int) (getenv('MEMCACHED_PORT') ?: 11211);
+$m->addServer($memcachedHost, $memcachedPort) or die ("Cannot connect to memcached!");
+$icecastStatusUrl = getenv('ICECAST_STATUS_URL') ?: 'http://icecast-srv:8000/status-json.xsl';
+$json = file_get_contents($icecastStatusUrl);
 $parsed_json = json_decode($json);
 $art = $parsed_json->{'icestats'}->{'source'}->{'artist'};
 $title = $parsed_json->{'icestats'}->{'source'}->{'title'};
@@ -16,7 +19,7 @@ $cacheGenre = $m->get('genre');
 $cacheBitrate = $m->get('bitrate');
 $cacheDescription = $m->get('description');
 //$cacheAlbum = $m->get('album');
-$string = file_get_contents("http://10.10.1.128:30420/status-json.xsl");
+$string = file_get_contents($icecastStatusUrl);
 $json_a = json_decode($string, true);
 
 if ( $title != $cacheTitle OR $cacheTitle == null) {

@@ -1,3 +1,6 @@
+<?php
+$icecastPublicUrl = rtrim(getenv('ICECAST_PUBLIC_URL') ?: 'http://localhost:8000', '/');
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -8,7 +11,7 @@
   <script>
     tailwind.config = { darkMode: 'class' };
   </script>
-  <link href="dist/skin/plyr/plyr.css" rel="stylesheet" />
+  <script type="module" src="https://cdn.jsdelivr.net/npm/@videojs/cdn@10.2.0/audio-neutral.js"></script>
   <script src="lib/jquery.min.js"></script>
   <style>
     .spinner {
@@ -53,13 +56,13 @@
           $box.html(`
             <div class="w-full h-full relative bg-cover bg-center rounded-xl shadow-lg overflow-hidden flex items-end" style="background-image: url('${url}');">
               <div class="w-full bg-white/80 dark:bg-black/60 backdrop-blur-sm p-4 text-center text-sm">
-                <div id="plyr-nowplaying" class="plyr-title">Loading track info...</div>
+                <div id="now-playing-info" class="now-playing-title">Loading track info...</div>
               </div>
             </div>
           `);
-          $('#plyr-nowplaying').load('streaminfo.php');
+          $('#now-playing-info').load('streaminfo.php');
         } else {
-          $('#plyr-nowplaying').load('streaminfo.php');
+          $('#now-playing-info').load('streaminfo.php');
         }
       });
     }
@@ -77,10 +80,13 @@
 
     <!-- Audio Player -->
     <div class="bg-gray-100 dark:bg-gray-800 rounded-xl shadow-lg p-4">
-      <audio id="player" controls class="w-full">
-        <source src="http://10.10.1.128:30420/default0.ogg" type="audio/ogg" />
-        Your browser does not support the audio element.
-      </audio>
+      <audio-player class="block w-full">
+        <audio-neutral-skin>
+          <audio src="<?= htmlspecialchars($icecastPublicUrl, ENT_QUOTES, 'UTF-8') ?>/default0.ogg" preload="none">
+            Your browser does not support HTML audio playback.
+          </audio>
+        </audio-neutral-skin>
+      </audio-player>
     </div>
 
     <!-- Now Playing (Album Art + Track Info) -->
