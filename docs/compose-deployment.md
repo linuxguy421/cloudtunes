@@ -10,7 +10,7 @@ This is the initial Compose deployment path. The existing Kubernetes manifests r
 
 ## First start
 
-1. Put at least one supported audio file in docker-ices/data/station_0/ before building. The current Ices image processes this directory during image build; the directory is ignored by Git so your music is not committed.
+1. Put at least one `.ogg` audio file in `docker-ices/data/station_0/`. This directory is ignored by Git. The Ices image no longer copies music into the image or mutates media during the build; music lives in the persistent `music-data` volume.
 2. Copy the sample environment file and adjust it for your host:
 
     cp .env.example .env
@@ -41,19 +41,18 @@ Memcached and the Ices control port are not published on the host. Services comm
 
 ## Data and configuration persistence
 
-Compose creates named volumes for Icecast configuration, Ices configuration, and the generated playlist. Music is kept in the named music-data volume. The first time that volume is created, Docker initializes it from the built image's /data directory, which is why you must add music before the first startup/build.
+Compose creates named volumes for Icecast configuration, Ices configuration, the generated playlist, and music. Music is stored in the named `music-data` volume. Image builds do not contain music and do not run conversion, normalization, metadata rewriting, renaming, or deletion scripts against media.
 
 Named volumes survive container recreation and image rebuilds. Do not use docker compose down -v unless you deliberately want to delete these volumes and their contents.
 
-To add more music after the first startup, copy it into the running Ices container's persistent music directory and regenerate the playlist:
+To add `.ogg` files after the first startup, copy them into the persistent music directory and restart Ices:
 
     docker compose cp /path/to/music/. ices:/data/station_0/
-    docker compose exec ices /etc/ices/init_songs.sh
-    docker compose exec ices /etc/ices/process_songs.sh
-    docker compose exec ices /etc/ices/update_songs.sh
     docker compose restart ices
 
-The current song-processing scripts are inherited from the original image and have limited error handling. This initial Compose phase does not redesign that workflow.
+The entrypoint regenerates the playlist on every Ices container start using only `.ogg` files under `/data/station_0`. Playlist generation is deterministic, writes atomically, and leaves the previous playlist untouched if no valid files are found. It does not modify audio files.
+
+The legacy `init_songs.sh` and `process_songs.sh` scripts remain in the image but are no longer run automatically. They can rename, convert, normalize, rewrite metadata, or delete files; do not run them against your only copy of any music. A separate reviewed change should define a safe media-import/transcoding workflow.
 
 ## Common operations
 
