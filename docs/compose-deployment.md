@@ -15,10 +15,15 @@ This is the initial Compose deployment path. The existing Kubernetes manifests r
 
     cp .env.example .env
 
-3. If listeners will connect from another computer, set ICECAST_PUBLIC_URL in .env to a URL reachable from those clients, such as http://192.0.2.10:8000. Replace the example address with your Docker host's actual LAN/DNS address.
-4. Validate and start the stack:
+3. Generate local service credentials before starting Compose:
 
-    docker compose config
+    bash scripts/init-secrets.sh
+
+   This creates four files under `secrets/` with restrictive permissions. The directory is excluded from Git. Back up these files securely; do not paste or commit their contents. The Ices and Icecast source password files are kept identical by the initializer.
+4. If listeners will connect from another computer, set ICECAST_PUBLIC_URL in .env to a URL reachable from those clients, such as http://192.0.2.10:8000. Replace the example address with your Docker host's actual LAN/DNS address.
+5. Validate and start the stack:
+
+    docker compose config --quiet
     docker compose up --build -d
     docker compose ps
 
@@ -68,7 +73,7 @@ Do not use docker compose down -v for routine updates or shutdowns; it removes t
 
 ## Scope and known limitations
 
-This is the first deployment foundation, not the final management workflow. The existing Dockerfiles retain their current base images and build steps. The Icecast/Ices configuration still contains the existing source password, and the external Last.fm integration retains its existing configuration. Those concerns are planned for the configuration/reliability phase. The frontend now accepts Compose service URLs through environment variables while retaining Kubernetes service-name defaults when those variables are not set.
+This is the first deployment foundation, not the final management workflow. The existing Dockerfiles retain their current base images and build steps. The Compose configuration now expects file-backed local secrets for the Icecast source, relay, and admin credentials and the Ices source credential. Run the initializer above before starting. These local files are not encrypted at rest; protect the host and backups. Existing named configuration volumes can differ from repository files, so the secret-rendering change must be validated against a backup in an isolated deployment before a live rollout. The external Last.fm integration retains its existing configuration. The frontend now accepts Compose service URLs through environment variables while retaining Kubernetes service-name defaults when those variables are not set.
 
 
 ## Audio player dependency
