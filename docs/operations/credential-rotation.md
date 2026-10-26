@@ -35,7 +35,7 @@ Do not paste secret contents or resolved secret-bearing configuration into ticke
 
 ## Runtime behavior
 
-The service entrypoints read the secret files and render effective configuration under `/run` at container startup. Icecast uses `/run/icecast.xml`; Ices uses `/run/ices-default0.xml`. The secret values are not written back into the persistent configuration volume by the renderer.
+The service entrypoints read the secret files and render effective configuration under `/run` at container startup. Icecast uses `/run/icecast.xml`; Ices uses `/run/ices-default0.xml`. After the runtime file is written successfully, the renderer replaces credential values in the persistent source configuration with placeholders. This also scrubs legacy hardcoded values from existing named config volumes on first startup with this branch. Back up those volumes before rollout.
 
 The renderer requires secret values containing 32-128 ASCII letters, digits, underscores, or hyphens. The initializer generates 64-character hexadecimal values. Compose secret mounts are read-only; local file-backed secrets remain plaintext on the host and must be protected.
 
