@@ -2,4 +2,5 @@
 set -eu
 
 python3 /usr/local/bin/render-cloudtunes-secrets.py ices
+/usr/local/bin/generate-playlist.sh
 exec /config/bootstrap.sh "$@"
