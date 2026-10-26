@@ -21,13 +21,20 @@ This is the initial Compose deployment path. The existing Kubernetes manifests r
 
    This creates four files under `secrets/` with restrictive permissions. The directory is excluded from Git. Back up these files securely; do not paste or commit their contents. The Ices and Icecast source password files are kept identical by the initializer.
 4. If listeners will connect from another computer, set ICECAST_PUBLIC_URL in .env to a URL reachable from those clients, such as http://192.0.2.10:8000. Replace the example address with your Docker host's actual LAN/DNS address.
-5. Validate and start the stack:
+5. Build the Ices image and seed the persistent music volume before starting the stack:
+
+    docker compose build ices
+    docker compose run --rm --no-deps -v "$PWD/docker-ices/data:/import:ro" --entrypoint /bin/sh ices -c 'mkdir -p /data/station_0 && find /import/station_0 -type f -name "*.ogg" -exec cp -n -- {} /data/station_0/ \\;'
+
+   This copies `.ogg` files into the named volume without overwriting files already present. It does not transcode or alter source files. If the source directory contains no `.ogg` files, add supported files before continuing.
+
+6. Validate and start the stack:
 
     docker compose config --quiet
     docker compose up --build -d
     docker compose ps
 
-The first build may take a while because the existing frontend image compiles Nginx and installs its PHP dependencies.
+The first build may take a while because the frontend image compiles Nginx and installs its PHP dependencies. Ices generates its playlist at startup from the mounted music volume. If no `.ogg` files are found, startup fails with a clear error instead of silently using a stale playlist.
 
 ## Endpoints
 
