@@ -11,8 +11,8 @@ WORKDIR /var/www/control-plane
 COPY composer.json composer.lock ./
 RUN composer install --no-interaction --prefer-dist --no-progress --no-scripts
 COPY . .
-RUN composer dump-autoload --optimize --no-interaction \
- && mkdir -p storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs bootstrap/cache \
+RUN mkdir -p storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs bootstrap/cache \
+ && composer dump-autoload --optimize --no-interaction \
  && chown -R www-data:www-data storage bootstrap/cache
 USER www-data
 EXPOSE 8080
