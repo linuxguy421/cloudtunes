@@ -11,6 +11,9 @@ class RegistrationController extends Controller
 {
     public function store(Request $request): JsonResponse
     {
+        // Normalize before the unique check so case variants cannot become a database error.
+        $request->merge(['email' => mb_strtolower(trim((string) $request->input('email', '')))]);
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:120'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
@@ -19,7 +22,7 @@ class RegistrationController extends Controller
 
         $user = User::query()->create([
             'name' => $validated['name'],
-            'email' => mb_strtolower($validated['email']),
+            'email' => $validated['email'],
             'password' => $validated['password'],
         ]);
 
