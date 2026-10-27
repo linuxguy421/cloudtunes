@@ -57,5 +57,7 @@ services:
     volumes: ["control-plane-storage:/var/www/control-plane/storage"]
 
 volumes:
-  control-plane-db-data: {}
-  control-plane-storage: {}
+  control-plane-db-data:
+    name: cloudtunes-control-plane-dev-db-data
+  control-plane-storage:
+    name: cloudtunes-control-plane-dev-storage
