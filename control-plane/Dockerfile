@@ -2,7 +2,9 @@ FROM composer:2 AS composer-bin
 FROM php:8.3-cli-alpine
 RUN apk add --no-cache icu-libs libpq libzip sqlite-libs oniguruma libxml2 \
  && apk add --no-cache --virtual .build-deps $PHPIZE_DEPS icu-dev postgresql-dev sqlite-dev libzip-dev oniguruma-dev libxml2-dev \
- && docker-php-ext-install -j"$(nproc)" dom intl mbstring pdo_pgsql pdo_sqlite pcntl simplexml xml xmlreader xmlwriter zip \
+ && docker-php-ext-install -j"$(nproc)" dom \
+ && docker-php-ext-install -j"$(nproc)" intl mbstring pdo_pgsql pdo_sqlite pcntl zip \
+ && docker-php-ext-install -j"$(nproc)" simplexml xml xmlreader xmlwriter \
  && apk del .build-deps
 COPY --from=composer-bin /usr/bin/composer /usr/local/bin/composer
 WORKDIR /var/www/control-plane
