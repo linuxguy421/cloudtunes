@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Station;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -27,11 +28,11 @@ class StationOnboardingTest extends TestCase
         parent::tearDown();
     }
 
-    public function test_registration_creates_a_pending_user(): void
+    public function test_registration_creates_a_pending_user_and_normalizes_email(): void
     {
         $response = $this->postJson('/api/v1/register', [
             'name' => 'New Listener',
-            'email' => 'new@example.test',
+            'email' => ' New@Example.test ',
             'password' => 'a-long-test-password',
             'password_confirmation' => 'a-long-test-password',
         ]);
@@ -45,6 +46,13 @@ class StationOnboardingTest extends TestCase
             'role' => 'user',
             'approval_status' => 'pending',
         ]);
+
+        $this->postJson('/api/v1/register', [
+            'name' => 'Duplicate Listener',
+            'email' => 'NEW@example.test',
+            'password' => 'another-long-password',
+            'password_confirmation' => 'another-long-password',
+        ])->assertUnprocessable()->assertJsonValidationErrors('email');
     }
 
     public function test_pending_user_cannot_create_a_station(): void
@@ -92,11 +100,17 @@ class StationOnboardingTest extends TestCase
             ->assertJsonPath('data.mount_path', '/synthwave-radio.ogg')
             ->assertJsonPath('data.status', 'draft');
 
+        $this->postJson('/api/v1/stations', ['name' => 'Synthwave Radio'])
+            ->assertCreated()
+            ->assertJsonPath('data.slug', 'synthwave-radio-2')
+            ->assertJsonPath('data.mount_path', '/synthwave-radio-2.ogg');
+
         $this->assertDatabaseHas('stations', [
             'user_id' => $user->id,
             'slug' => 'synthwave-radio',
             'desired_state' => 'stopped',
         ]);
+        $this->assertDatabaseCount('stations', 2);
     }
 
     public function test_non_admin_cannot_approve_users(): void
@@ -117,5 +131,109 @@ class StationOnboardingTest extends TestCase
                 'approval_status' => 'approved',
             ])
             ->assertForbidden();
+    }
+
+    public function test_login_accepts_valid_credentials_and_logout_ends_session(): void
+    {
+        $user = User::query()->create([
+            'name' => 'Listener',
+            'email' => 'listener@example.test',
+            'password' => 'a-long-test-password',
+        ]);
+
+        $this->postJson('/api/v1/login', [
+            'email' => 'LISTENER@example.test',
+            'password' => 'a-long-test-password',
+        ])->assertOk()
+            ->assertJsonPath('data.email', 'listener@example.test')
+            ->assertJsonPath('data.approval_status', 'pending');
+
+        $this->assertAuthenticatedAs($user);
+
+        $this->postJson('/api/v1/logout')
+            ->assertOk()
+            ->assertJsonPath('message', 'Signed out.');
+
+        $this->assertGuest();
+    }
+
+    public function test_login_rejects_invalid_credentials_and_rejected_accounts(): void
+    {
+        $user = User::query()->create([
+            'name' => 'Listener',
+            'email' => 'listener@example.test',
+            'password' => 'a-long-test-password',
+        ]);
+
+        $this->postJson('/api/v1/login', [
+            'email' => 'listener@example.test',
+            'password' => 'incorrect-password',
+        ])->assertUnprocessable()->assertJsonValidationErrors('email');
+
+        $user->forceFill(['approval_status' => 'rejected'])->save();
+
+        $this->postJson('/api/v1/login', [
+            'email' => 'listener@example.test',
+            'password' => 'a-long-test-password',
+        ])->assertUnprocessable()->assertJsonValidationErrors('email');
+
+        $this->assertGuest();
+    }
+
+    public function test_station_and_approval_routes_require_authentication(): void
+    {
+        $target = User::query()->create([
+            'name' => 'Target',
+            'email' => 'target@example.test',
+            'password' => 'a-long-test-password',
+        ]);
+
+        $this->getJson('/api/v1/stations')->assertUnauthorized();
+        $this->postJson('/api/v1/stations', ['name' => 'Unauthenticated'])->assertUnauthorized();
+        $this->patchJson("/api/v1/admin/users/{$target->id}/approval", [
+            'approval_status' => 'approved',
+        ])->assertUnauthorized();
+
+        $this->assertDatabaseCount('stations', 0);
+    }
+
+    public function test_station_list_only_returns_the_authenticated_users_stations(): void
+    {
+        $owner = User::query()->create([
+            'name' => 'Station Owner',
+            'email' => 'owner@example.test',
+            'password' => 'a-long-test-password',
+        ]);
+        $otherUser = User::query()->create([
+            'name' => 'Other User',
+            'email' => 'other@example.test',
+            'password' => 'a-long-test-password',
+        ]);
+
+        Station::query()->create([
+            'user_id' => $owner->id,
+            'name' => 'Owner Station',
+            'slug' => 'owner-station',
+            'status' => Station::STATUS_DRAFT,
+            'desired_state' => Station::DESIRED_STOPPED,
+            'playback_mode' => 'random',
+            'mount_path' => '/owner-station.ogg',
+        ]);
+        Station::query()->create([
+            'user_id' => $otherUser->id,
+            'name' => 'Private Station',
+            'slug' => 'private-station',
+            'status' => Station::STATUS_DRAFT,
+            'desired_state' => Station::DESIRED_STOPPED,
+            'playback_mode' => 'random',
+            'mount_path' => '/private-station.ogg',
+        ]);
+
+        $this->actingAs($owner)
+            ->getJson('/api/v1/stations')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.slug', 'owner-station')
+            ->assertJsonMissing(['slug' => 'private-station']);
     }
 }
