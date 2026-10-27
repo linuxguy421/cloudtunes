@@ -43,7 +43,9 @@ services:
   control-plane:
     build: { context: ./control-plane }
     environment: *control-plane-env
-    command: ["php","artisan","serve","--host=0.0.0.0","--port=8080"]
+    # Run PHP directly rather than through `artisan serve`, whose child server
+    # process can lose the Compose-provided environment in this dev setup.
+    command: ["php","-S","0.0.0.0:8080","-t","public","public/index.php"]
     ports: ["18080:8080"]
     depends_on:
       control-plane-migrate: { condition: service_completed_successfully }
