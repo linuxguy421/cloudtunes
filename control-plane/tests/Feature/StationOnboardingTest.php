@@ -4,20 +4,11 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Tests\TestCase;
 
 class StationOnboardingTest extends TestCase
 {
     use RefreshDatabase;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        // These feature tests cover onboarding and authorization behavior, not browser CSRF token exchange.
-        $this->withoutMiddleware(ValidateCsrfToken::class);
-    }
 
     public function test_registration_creates_a_pending_user(): void
     {
