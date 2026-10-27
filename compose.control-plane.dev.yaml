@@ -1,0 +1,60 @@
+# Run this file alone; do not combine it with compose.yaml.
+services:
+  control-plane-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: cloudtunes_control_plane
+      POSTGRES_USER: cloudtunes
+      POSTGRES_PASSWORD: cloudtunes-dev-only
+    ports: ["15432:5432"]
+    volumes: ["control-plane-db-data:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cloudtunes -d cloudtunes_control_plane"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  control-plane-migrate:
+    build: { context: ./control-plane }
+    environment: &control-plane-env
+      APP_NAME: CloudTunes Control Plane
+      APP_ENV: local
+      APP_DEBUG: "true"
+      APP_KEY: "base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+      APP_URL: http://localhost:18080
+      LOG_CHANNEL: stderr
+      DB_CONNECTION: pgsql
+      DB_HOST: control-plane-db
+      DB_PORT: "5432"
+      DB_DATABASE: cloudtunes_control_plane
+      DB_USERNAME: cloudtunes
+      DB_PASSWORD: cloudtunes-dev-only
+      QUEUE_CONNECTION: database
+      SESSION_DRIVER: database
+      CACHE_STORE: database
+    command: ["php","artisan","migrate","--force"]
+    depends_on:
+      control-plane-db: { condition: service_healthy }
+
+  control-plane:
+    build: { context: ./control-plane }
+    environment: *control-plane-env
+    command: ["php","artisan","serve","--host=0.0.0.0","--port=8080"]
+    ports: ["18080:8080"]
+    depends_on:
+      control-plane-migrate: { condition: service_completed_successfully }
+    volumes: ["control-plane-storage:/var/www/control-plane/storage"]
+
+  control-plane-worker:
+    build: { context: ./control-plane }
+    environment: *control-plane-env
+    command: ["php","artisan","queue:work","--sleep=1","--tries=3","--timeout=90"]
+    depends_on:
+      control-plane-migrate: { condition: service_completed_successfully }
+    volumes: ["control-plane-storage:/var/www/control-plane/storage"]
+
+volumes:
+  control-plane-db-data:
+    name: cloudtunes-control-plane-dev-db-data
+  control-plane-storage:
+    name: cloudtunes-control-plane-dev-storage
