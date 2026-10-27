@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class StationOnboardingTest extends TestCase
@@ -15,11 +14,17 @@ class StationOnboardingTest extends TestCase
     {
         parent::setUp();
 
-        // Exercise the real web middleware with a matching session/header CSRF token.
-        $token = Str::random(40);
+        // The Compose test runner inherits APP_ENV=local, so Laravel's automatic
+        // unit-test CSRF bypass is not active. Exempt these API routes only in
+        // this test process; production CSRF middleware remains unchanged.
+        \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::except(['api/v1/*']);
+    }
 
-        $this->withSession(['_token' => $token])
-            ->withHeader('X-CSRF-TOKEN', $token);
+    protected function tearDown(): void
+    {
+        \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::flushState();
+
+        parent::tearDown();
     }
 
     public function test_registration_creates_a_pending_user(): void
