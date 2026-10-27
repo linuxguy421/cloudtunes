@@ -38,7 +38,7 @@
         </article>
         <article class="panel">
             <p style="margin:0">Account</p>
-            <div style="margin:.6rem 0"><span class="badge {{ $user->approval_status === 'approved' || $user->role === 'admin' ? 'good' : 'warn' }}">{{ ucfirst($user->approval_status ?? 'unknown') }}</span></div>
+            <div style="margin:.6rem 0"><span class="badge {{ $user->approval_status === 'approved' || $user->role === 'admin' ? 'good' : 'warn' }}">{{ $user->role === 'admin' ? 'Administrator' : ucfirst($user->approval_status ?? 'unknown') }}</span></div>
             <span class="muted">{{ $user->role === 'admin' ? 'Administrator' : 'Listener account' }}</span>
         </article>
     </section>
