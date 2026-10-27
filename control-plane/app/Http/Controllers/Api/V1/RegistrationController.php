@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Http\Controllers\Api\V1;
+namespace App\\Http\\Controllers\\Api\\V1;
 
-use App\Http\Controllers\Controller;
-use App\Models\User;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
+use App\\Http\\Controllers\\Controller;
+use App\\Models\\User;
+use Illuminate\\Http\\JsonResponse;
+use Illuminate\\Http\\Request;
 
 class RegistrationController extends Controller
 {
@@ -25,6 +25,10 @@ class RegistrationController extends Controller
             'email' => $validated['email'],
             'password' => $validated['password'],
         ]);
+
+        // approval_status is set by the database default and is intentionally
+        // not mass assignable, so reload it before including it in the response.
+        $user->refresh();
 
         return response()->json([
             'data' => [
