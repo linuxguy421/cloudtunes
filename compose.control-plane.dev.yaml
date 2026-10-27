@@ -1,4 +1,6 @@
 # Run this file alone; do not combine it with compose.yaml.
+# Use a separate Compose project so test commands cannot target the live stream stack.
+name: cloudtunes-control-plane-dev
 services:
   control-plane-db:
     image: postgres:16-alpine
