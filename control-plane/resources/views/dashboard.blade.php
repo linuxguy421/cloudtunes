@@ -8,12 +8,12 @@
     <h1>Welcome, {{ $user->name }}.</h1>
     <p class="lede">Manage your stations and keep an eye on your radio setup.</p>
 
-    @if ($user->approval_status === 'pending')
+    @if ($user->role !== 'admin' && $user->approval_status === 'pending')
         <div class="notice warning" role="status">
             <strong>Your account is awaiting approval.</strong>
             <p style="margin:.35rem 0 0">You can sign in, but station creation is unavailable until an administrator approves your account.</p>
         </div>
-    @elseif ($user->approval_status === 'rejected')
+    @elseif ($user->role !== 'admin' && $user->approval_status === 'rejected')
         <div class="notice" role="alert">
             <strong>This account is not approved for station management.</strong>
             <p style="margin:.35rem 0 0">Contact an administrator if you believe this is incorrect.</p>
