@@ -2,12 +2,13 @@ FROM composer:2 AS composer-bin
 FROM php:8.3-cli-alpine
 RUN apk add --no-cache icu-libs libpq libzip sqlite-libs oniguruma libxml2 \
  && apk add --no-cache --virtual .build-deps $PHPIZE_DEPS icu-dev postgresql-dev sqlite-dev libzip-dev oniguruma-dev libxml2-dev \
- # DOM headers are consumed by XMLReader; avoid a parallel-build race in php-src.
- && docker-php-ext-install -j1 dom intl mbstring pdo_pgsql pdo_sqlite pcntl simplexml xml xmlreader xmlwriter zip \
+ # XMLReader includes a header provided by DOM; install DOM in its own build step first.
+ && docker-php-ext-install -j1 dom \
+ && docker-php-ext-install -j1 intl mbstring pdo_pgsql pdo_sqlite pcntl simplexml xml xmlreader xmlwriter zip \
  && apk del .build-deps
 COPY --from=composer-bin /usr/bin/composer /usr/local/bin/composer
 WORKDIR /var/www/control-plane
-COPY composer.json ./
+COPY composer.json composer.lock ./
 RUN composer install --no-interaction --prefer-dist --no-progress --no-scripts
 COPY . .
 RUN composer dump-autoload --optimize --no-interaction \
