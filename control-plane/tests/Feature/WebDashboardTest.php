@@ -4,12 +4,22 @@ namespace Tests\Feature;
 
 use App\Models\Station;
 use App\Models\User;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class WebDashboardTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // These tests exercise web authentication and authorization flows; CSRF
+        // token enforcement is handled separately by Laravel's browser middleware.
+        $this->withoutMiddleware(ValidateCsrfToken::class);
+    }
 
     public function test_guests_are_redirected_to_login_and_login_page_has_no_public_registration_link(): void
     {
