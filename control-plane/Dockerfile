@@ -12,6 +12,7 @@ COPY composer.json composer.lock ./
 RUN composer install --no-interaction --prefer-dist --no-progress --no-scripts
 COPY . .
 RUN mkdir -p storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs bootstrap/cache \
+ && touch .env \
  && composer dump-autoload --optimize --no-interaction \
  && chown -R www-data:www-data storage bootstrap/cache
 USER www-data
