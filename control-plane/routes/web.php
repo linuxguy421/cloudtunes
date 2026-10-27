@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\Controllers\Api\V1\RegistrationController;
 use App\Http\Controllers\Api\V1\SessionController as ApiSessionController;
 use App\Http\Controllers\Api\V1\StationController as ApiStationController;
 use App\Http\Controllers\Api\V1\UserApprovalController;
@@ -25,8 +24,8 @@ Route::middleware('auth')->group(function (): void {
         ->name('stations.store');
 });
 
-// Session-authenticated API endpoints remain available for clients that use them.
-Route::post('/api/v1/register', [RegistrationController::class, 'store'])->middleware('throttle:5,1');
+// Session-authenticated API endpoints remain on web middleware because they use
+// the browser session and therefore retain Laravel's CSRF protection.
 Route::post('/api/v1/login', [ApiSessionController::class, 'store'])->middleware('throttle:10,1');
 
 Route::middleware('auth')->group(function (): void {
