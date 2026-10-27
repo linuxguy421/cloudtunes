@@ -1,0 +1,25 @@
+# Composer dependencies
+/vendor/
+
+# Environment and local overrides
+.env
+.env.*
+!.env.example
+
+# Laravel runtime files
+/storage/*.key
+/storage/app/*
+!/storage/app/.gitignore
+/storage/framework/cache/*
+!/storage/framework/cache/.gitignore
+/storage/framework/sessions/*
+!/storage/framework/sessions/.gitignore
+/storage/framework/testing/*
+!/storage/framework/testing/.gitignore
+/storage/framework/views/*
+!/storage/framework/views/.gitignore
+/storage/logs/*
+!/storage/logs/.gitignore
+
+# Generated framework cache
+/bootstrap/cache/*.php
