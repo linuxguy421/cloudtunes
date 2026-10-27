@@ -17,8 +17,9 @@ class SessionController extends Controller
             'email' => ['required', 'email'],
             'password' => ['required', 'string'],
         ]);
+        $credentials['email'] = mb_strtolower($credentials['email']);
 
-        $user = User::query()->where('email', mb_strtolower($credentials['email']))->first();
+        $user = User::query()->where('email', $credentials['email'])->first();
 
         if ($user?->approval_status === 'rejected' || ! Auth::guard('web')->attempt($credentials)) {
             throw ValidationException::withMessages([
