@@ -36,6 +36,13 @@ class StationOnboardingTest extends TestCase
             'password_confirmation' => 'a-long-test-password',
         ]);
 
+        fwrite(STDERR, json_encode([
+            'status' => $response->status(),
+            'body' => $response->getContent(),
+            'app_env' => app()->environment(),
+            'running_unit_tests' => app()->runningUnitTests(),
+        ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . PHP_EOL);
+
         $response->assertCreated()
             ->assertJsonPath('data.email', 'new@example.test')
             ->assertJsonPath('data.approval_status', 'pending');
