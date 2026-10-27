@@ -1,10 +1,10 @@
 <?php
 
-namespace Tests\Feature;
+namespace Tests\\Feature;
 
-use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
+use App\\Models\\User;
+use Illuminate\\Foundation\\Testing\\RefreshDatabase;
+use Tests\\TestCase;
 
 class StationOnboardingTest extends TestCase
 {
@@ -17,12 +17,12 @@ class StationOnboardingTest extends TestCase
         // The Compose test runner inherits APP_ENV=local, so Laravel's automatic
         // unit-test CSRF bypass is not active. Exempt these API routes only in
         // this test process; production CSRF middleware remains unchanged.
-        \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::except(['api/v1/*']);
+        \\Illuminate\\Foundation\\Http\\Middleware\\ValidateCsrfToken::except(['api/v1/*']);
     }
 
     protected function tearDown(): void
     {
-        \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::flushState();
+        \\Illuminate\\Foundation\\Http\\Middleware\\ValidateCsrfToken::flushState();
 
         parent::tearDown();
     }
@@ -35,13 +35,6 @@ class StationOnboardingTest extends TestCase
             'password' => 'a-long-test-password',
             'password_confirmation' => 'a-long-test-password',
         ]);
-
-        fwrite(STDERR, json_encode([
-            'status' => $response->status(),
-            'body' => $response->getContent(),
-            'app_env' => app()->environment(),
-            'running_unit_tests' => app()->runningUnitTests(),
-        ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . PHP_EOL);
 
         $response->assertCreated()
             ->assertJsonPath('data.email', 'new@example.test')
@@ -76,7 +69,6 @@ class StationOnboardingTest extends TestCase
             'email' => 'admin@example.test',
             'password' => 'a-long-test-password',
             'role' => 'admin',
-            'approval_status' => 'approved',
         ]);
         $user = User::query()->create([
             'name' => 'Approved User',
@@ -113,7 +105,6 @@ class StationOnboardingTest extends TestCase
             'name' => 'Regular User',
             'email' => 'regular@example.test',
             'password' => 'a-long-test-password',
-            'approval_status' => 'approved',
         ]);
         $target = User::query()->create([
             'name' => 'Target',
