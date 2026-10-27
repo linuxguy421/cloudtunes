@@ -8,7 +8,8 @@ services:
       POSTGRES_DB: cloudtunes_control_plane
       POSTGRES_USER: cloudtunes
       POSTGRES_PASSWORD: cloudtunes-dev-only
-    ports: ["15432:5432"]
+    # Optional host access; use a dedicated port so this stack does not conflict with other databases.
+    ports: ["127.0.0.1:${CONTROL_PLANE_DB_PORT:-15433}:5432"]
     volumes: ["control-plane-db-data:/var/lib/postgresql/data"]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U cloudtunes -d cloudtunes_control_plane"]
@@ -56,7 +57,5 @@ services:
     volumes: ["control-plane-storage:/var/www/control-plane/storage"]
 
 volumes:
-  control-plane-db-data:
-    name: cloudtunes-control-plane-dev-db-data
-  control-plane-storage:
-    name: cloudtunes-control-plane-dev-storage
+  control-plane-db-data: {}
+  control-plane-storage: {}
