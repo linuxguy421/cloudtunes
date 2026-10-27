@@ -1,8 +1,7 @@
 FROM composer:2 AS composer-bin
-FROM php:8.3-cli-alpine
-# The official PHP image already provides DOM and the XML family. Rebuilding
-# them as shared extensions can fail because XMLReader includes a generated
-# DOM header that is not installed by docker-php-ext-install.
+FROM php:8.4-cli-alpine
+# Use PHP 8.4 to satisfy the PHP >=8.4.1 requirements in composer.lock.
+# The official PHP image already provides DOM and the XML family.
 RUN apk add --no-cache icu-libs libpq libzip sqlite-libs oniguruma libxml2 \
  && apk add --no-cache --virtual .build-deps $PHPIZE_DEPS icu-dev postgresql-dev sqlite-dev libzip-dev oniguruma-dev libxml2-dev \
  && docker-php-ext-install -j1 intl mbstring pdo_pgsql pdo_sqlite pcntl zip \
