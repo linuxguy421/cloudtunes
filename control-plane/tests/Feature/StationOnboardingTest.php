@@ -4,11 +4,23 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class StationOnboardingTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // Exercise the real web middleware with a matching session/header CSRF token.
+        $token = Str::random(40);
+
+        $this->withSession(['_token' => $token])
+            ->withHeader('X-CSRF-TOKEN', $token);
+    }
 
     public function test_registration_creates_a_pending_user(): void
     {
