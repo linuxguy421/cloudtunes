@@ -2,8 +2,9 @@
 Description=Daily CloudTunes control-plane PostgreSQL backup
 
 [Timer]
-OnCalendar=daily
+OnCalendar=*-*-* 03:15:00
 Persistent=true
+RandomizedDelaySec=10m
 Unit=cloudtunes-control-plane-backup.service
 
 [Install]
