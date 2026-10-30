@@ -11,10 +11,13 @@
     @if (session('status'))
         <div class="notice success" role="status">{{ session('status') }}</div>
     @endif
+    @if ($errors->has('station'))
+        <div class="notice warning" role="alert">{{ $errors->first('station') }}</div>
+    @endif
 
     <div class="stack" style="grid-template-columns:minmax(0,1.4fr) minmax(280px,1fr)">
         <section class="panel">
-            <h2>Your stations ({{ $stations->count() }})</h2>
+            <h2>{{ auth()->user()->role === 'admin' ? 'All stations' : 'Your stations' }} ({{ $stations->count() }})</h2>
             @if ($stations->isEmpty())
                 <div class="empty">
                     <strong>No stations created yet.</strong>
@@ -26,8 +29,23 @@
                         <article class="station">
                             <div>
                                 <h3>{{ $station->name }}</h3>
+                                @if (auth()->user()->role === 'admin')
+                                    <p>Owner: {{ $station->owner?->name ?? 'Unknown' }} ({{ $station->owner?->email ?? '—' }})</p>
+                                @endif
                                 <p>Mount: <code>{{ $station->mount_path }}</code></p>
                                 <p>Mode: {{ ucfirst($station->playback_mode) }} · Created {{ $station->created_at?->format('M j, Y') }}</p>
+                                <div class="row" style="margin-top:.65rem">
+                                    <a class="button secondary" href="{{ route('stations.edit', $station) }}">Edit</a>
+                                    @if (! in_array($station->status, ['running', 'provisioning'], true))
+                                        <form method="POST" action="{{ route('stations.destroy', $station) }}" onsubmit="return confirm('Archive this station? Its configuration and history will be retained.');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button class="button secondary" type="submit">Archive</button>
+                                        </form>
+                                    @else
+                                        <span class="muted">Stop before archiving</span>
+                                    @endif
+                                </div>
                             </div>
                             <span class="badge {{ $station->status === 'running' ? 'good' : '' }}">{{ ucfirst($station->status) }}</span>
                         </article>
