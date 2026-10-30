@@ -92,7 +92,7 @@ class StationController extends Controller
     {
         Gate::authorize('delete', $station);
 
-        if (in_array($station->status, [Station::STATUS_RUNNING, Station::STATUS_PROVISIONING], true)) {
+        if ($station->desired_state === Station::DESIRED_RUNNING || in_array($station->status, [Station::STATUS_RUNNING, Station::STATUS_PROVISIONING], true)) {
             return redirect()->route('stations.index')
                 ->withErrors(['station' => 'Stop the station before archiving it.']);
         }
