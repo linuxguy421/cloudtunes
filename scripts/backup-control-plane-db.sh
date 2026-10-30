@@ -45,6 +45,7 @@ if [[ "$actual_volume" != "$EXPECTED_DB_VOLUME" ]]; then
 fi
 
 install -d -m 700 "$BACKUP_DIR"
+chmod 700 "$BACKUP_DIR"
 timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
 backup_file="${BACKUP_DIR}/${BACKUP_PREFIX}-${timestamp}.sql.gz"
 temporary_file="$(mktemp "${BACKUP_DIR}/.${BACKUP_PREFIX}.XXXXXX")"
