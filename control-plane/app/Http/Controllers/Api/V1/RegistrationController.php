@@ -11,6 +11,8 @@ class RegistrationController extends Controller
 {
     public function store(Request $request): JsonResponse
     {
+        abort_unless(config('cloudtunes.public_registration_enabled', false), 404);
+
         // Normalize before the unique check so case variants cannot become a database error.
         $request->merge(['email' => mb_strtolower(trim((string) $request->input('email', '')))]);
 
