@@ -323,6 +323,39 @@ class WebDashboardTest extends TestCase
             ->assertSee('station-owner@example.test');
     }
 
+
+    public function test_archived_station_slug_is_not_reused_by_new_station(): void
+    {
+        $owner = User::query()->create([
+            'name' => 'Owner',
+            'email' => 'owner@example.test',
+            'password' => 'a-long-test-password',
+        ]);
+        $owner->forceFill(['approval_status' => 'approved'])->save();
+
+        $station = Station::query()->create([
+            'user_id' => $owner->id,
+            'name' => 'Night Drive',
+            'slug' => 'night-drive',
+            'status' => Station::STATUS_STOPPED,
+            'desired_state' => Station::DESIRED_STOPPED,
+            'playback_mode' => 'random',
+            'mount_path' => '/night-drive.ogg',
+        ]);
+        $station->delete();
+
+        $this->actingAs($owner)
+            ->post(route('stations.store'), ['name' => 'Night Drive'])
+            ->assertRedirect(route('stations.index'));
+
+        $this->assertDatabaseHas('stations', [
+            'user_id' => $owner->id,
+            'slug' => 'night-drive-2',
+            'mount_path' => '/night-drive-2.ogg',
+            'deleted_at' => null,
+        ]);
+    }
+
     public function test_sign_out_invalidates_the_authenticated_session(): void
     {
         $user = User::query()->create([
