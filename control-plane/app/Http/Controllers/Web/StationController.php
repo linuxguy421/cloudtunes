@@ -16,7 +16,7 @@ class StationController extends Controller
 {
     public function index(Request $request): View
     {
-        $query = Station::query()->orderByDesc('created_at');
+        $query = Station::query()->with('owner')->orderByDesc('created_at');
 
         if ($request->user()->role !== 'admin') {
             $query->where('user_id', $request->user()->getAuthIdentifier());
