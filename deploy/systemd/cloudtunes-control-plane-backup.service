@@ -11,4 +11,4 @@ Group=cloudtunes
 WorkingDirectory=/opt/cloudtunes
 Environment=BACKUP_DIR=/var/backups/cloudtunes/control-plane
 Environment=RETENTION_DAYS=14
-ExecStart=/opt/cloudtunes/scripts/backup-control-plane-db.sh
+ExecStart=/usr/bin/bash /opt/cloudtunes/scripts/backup-control-plane-db.sh
