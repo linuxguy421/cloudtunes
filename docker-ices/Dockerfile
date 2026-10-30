@@ -12,15 +12,12 @@ RUN \
 RUN mkdir -p /var/log/ices
 RUN mkdir -p /etc/ices
 ADD etc/ices/ /etc/ices
-ADD data/ /data
-RUN /etc/ices/init_songs.sh
-RUN /etc/ices/update_songs.sh
-RUN /etc/ices/process_songs.sh
 
-# Add supervisor configuration and runtime scripts.
+# Music and generated playlist state belong to persistent runtime volumes, not
+# the image. Generate the playlist at startup after Compose mounts those volumes.
 COPY container-files /
 COPY supervisord-ices.conf /etc/supervisor.d/supervisord-ices.conf
-RUN chmod 0755 /usr/local/bin/cloudtunes-entrypoint
+RUN chmod 0755 /usr/local/bin/cloudtunes-entrypoint /usr/local/bin/generate-playlist.sh
 
 EXPOSE 8001
 ENTRYPOINT ["/usr/local/bin/cloudtunes-entrypoint"]
