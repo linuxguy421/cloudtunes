@@ -16,13 +16,14 @@ class StationController extends Controller
 {
     public function index(Request $request): View
     {
-        $stations = Station::query()
-            ->where('user_id', $request->user()->getAuthIdentifier())
-            ->orderByDesc('created_at')
-            ->get();
+        $query = Station::query()->orderByDesc('created_at');
+
+        if ($request->user()->role !== 'admin') {
+            $query->where('user_id', $request->user()->getAuthIdentifier());
+        }
 
         return view('stations.index', [
-            'stations' => $stations,
+            'stations' => $query->get(),
             'canCreateStation' => Gate::allows('create', Station::class),
         ]);
     }
@@ -65,12 +66,48 @@ class StationController extends Controller
         throw new LogicException('Station slug retry loop exited unexpectedly.');
     }
 
+    public function edit(Request $request, Station $station): View
+    {
+        Gate::authorize('update', $station);
+
+        return view('stations.edit', ['station' => $station]);
+    }
+
+    public function update(Request $request, Station $station): RedirectResponse
+    {
+        Gate::authorize('update', $station);
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:120'],
+        ]);
+
+        // Keep slug and mount path stable: changing either can break existing
+        // player URLs and requires a separate runtime migration operation.
+        $station->update(['name' => $validated['name']]);
+
+        return redirect()->route('stations.index')->with('status', 'Station details updated.');
+    }
+
+    public function destroy(Request $request, Station $station): RedirectResponse
+    {
+        Gate::authorize('delete', $station);
+
+        if (in_array($station->status, [Station::STATUS_RUNNING, Station::STATUS_PROVISIONING], true)) {
+            return redirect()->route('stations.index')
+                ->withErrors(['station' => 'Stop the station before archiving it.']);
+        }
+
+        $station->delete();
+
+        return redirect()->route('stations.index')->with('status', 'Station archived. Its configuration and history have been retained.');
+    }
+
     private function nextAvailableSlug(string $baseSlug): string
     {
         $slug = Str::limit($baseSlug, 70, '');
         $suffix = 2;
 
-        while (Station::query()->where('slug', $slug)->exists()) {
+        while (Station::withTrashed()->where('slug', $slug)->exists()) {
             $tail = '-' . $suffix++;
             $slug = Str::limit($baseSlug, 80 - strlen($tail), '') . $tail;
         }
