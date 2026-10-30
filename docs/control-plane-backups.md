@@ -16,8 +16,7 @@ permissions.
 From the repository root:
 
 ```sh
-chmod +x scripts/backup-control-plane-db.sh scripts/update-control-plane-dev.sh
-./scripts/backup-control-plane-db.sh
+bash scripts/backup-control-plane-db.sh
 ```
 
 The default destination is `backups/control-plane/`, which is excluded from Git.
@@ -48,7 +47,7 @@ sudo systemctl enable --now cloudtunes-control-plane-backup.timer
 systemctl list-timers cloudtunes-control-plane-backup.timer
 ```
 
-The timer is scheduled daily at 03:15 local system time and catches up after downtime.
+The timer is scheduled daily at 03:15 local system time, with a randomized delay of up to ten minutes. It catches up after downtime.
 
 ## Backup-first updates
 
