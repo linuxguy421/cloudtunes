@@ -1,0 +1,10 @@
+[Unit]
+Description=Daily CloudTunes control-plane PostgreSQL backup
+
+[Timer]
+OnCalendar=daily
+Persistent=true
+Unit=cloudtunes-control-plane-backup.service
+
+[Install]
+WantedBy=timers.target
