@@ -22,6 +22,9 @@ Route::middleware('auth')->group(function (): void {
     Route::post('/stations', [StationController::class, 'store'])
         ->middleware('throttle:10,1')
         ->name('stations.store');
+    Route::get('/stations/{station}/edit', [StationController::class, 'edit'])->name('stations.edit');
+    Route::put('/stations/{station}', [StationController::class, 'update'])->name('stations.update');
+    Route::delete('/stations/{station}', [StationController::class, 'destroy'])->name('stations.destroy');
 });
 
 // Session-authenticated API endpoints remain on web middleware because they use
