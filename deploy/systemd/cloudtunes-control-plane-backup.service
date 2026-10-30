@@ -1,0 +1,14 @@
+[Unit]
+Description=CloudTunes control-plane PostgreSQL backup
+Wants=network-online.target
+After=network-online.target docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+User=cloudtunes
+Group=cloudtunes
+WorkingDirectory=/opt/cloudtunes
+Environment=BACKUP_DIR=/var/backups/cloudtunes/control-plane
+Environment=RETENTION_DAYS=14
+ExecStart=/opt/cloudtunes/scripts/backup-control-plane-db.sh
