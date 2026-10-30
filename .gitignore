@@ -2,3 +2,6 @@ docker-ices/data/*
 radio-frontend/*/node_modules
 .env
 /secrets/
+
+# Local database backups (contain application data)
+/backups/
