@@ -54,7 +54,27 @@ The Laravel container reads Icecast status over the private Compose network at `
 
 The control plane uses a dedicated PostgreSQL 16 service and the named `control-plane-db-data` volume. Laravel sessions, cache, and queued jobs are stored in that database. The `control-plane-storage` volume persists Laravel storage.
 
-The first start creates an empty control-plane database. If you have users or station records in the separate development stack, back up that database and deliberately restore it into the primary database before treating the primary deployment as authoritative. Do not point two PostgreSQL containers at the same data directory, and do not delete either database volume during this transition.
+The first start creates an empty control-plane database. If you want to retain users and station records from the isolated development stack, migrate them before running the primary migration job:
+
+```sh
+# 1. Back up the isolated development database (source).
+docker compose -f compose.control-plane.dev.yaml exec -T control-plane-db \
+  pg_dump -U cloudtunes -d cloudtunes_control_plane -Fc \
+  > cloudtunes-control-plane-dev.dump
+
+# 2. Start only the new primary database; do not start the app/migration job yet.
+docker compose up -d control-plane-db
+
+# 3. Restore into the new, empty primary database (target).
+docker compose exec -T control-plane-db \
+  pg_restore --no-owner --no-privileges -U cloudtunes \
+  -d cloudtunes_control_plane < cloudtunes-control-plane-dev.dump
+
+# 4. Start the full stack. The migration job will see the restored migration history.
+docker compose up --build -d
+```
+
+Keep the dump until the primary deployment is verified and backed up. If the primary database has already had migrations or application data written to it, stop and take a fresh backup before attempting any restore; do not blindly restore over it. Do not point two PostgreSQL containers at the same data directory, and do not delete either database volume during this transition.
 
 Icecast configuration, music, Ices playlists, and Ices configuration continue to use their existing named volumes. Named volumes survive container recreation and image rebuilds. Never use `docker compose down -v` for routine updates or shutdowns; it deletes persistent data.
 
