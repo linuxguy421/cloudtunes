@@ -1,13 +1,15 @@
 <?php
 
-namespace App\Services;
+namespace App\\Services;
 
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Http;
+use Illuminate\\Support\\Facades\\Cache;
+use Illuminate\\Support\\Facades\\Http;
 use Throwable;
 
 class IcecastNowPlaying
 {
+    private const NO_ARTWORK = '__cloudtunes_no_artwork__';
+
     /**
      * Read the configured Icecast mount and resolve its current track artwork.
      *
@@ -59,8 +61,7 @@ class IcecastNowPlaying
                 'artwork_url' => $this->artwork($artist, $title),
             ];
         } catch (Throwable) {
-            // The public player should remain available even if Icecast or the
-            // optional artwork provider is temporarily unreachable.
+            // The public player should remain available even if Icecast is temporarily unreachable.
             return $empty;
         }
     }
@@ -94,47 +95,197 @@ class IcecastNowPlaying
 
     private function artwork(?string $artist, ?string $title): ?string
     {
-        $apiKey = (string) config('cloudtunes.lastfm_api_key');
-
-        if ($apiKey === '' || $artist === null || $title === null) {
+        if ($artist === null || $title === null) {
             return null;
         }
 
-        $cacheKey = 'cloudtunes.track-artwork.'.sha1(mb_strtolower($artist.'|'.$title));
+        $cacheKey = 'cloudtunes.track-artwork.v2.'.sha1($this->normalize($artist).'|'.$this->normalize($title));
 
-        return Cache::remember($cacheKey, now()->addMinutes(30), function () use ($apiKey, $artist, $title): ?string {
-            try {
-                $response = Http::timeout(3)->get('https://ws.audioscrobbler.com/2.0/', [
-                    'method' => 'track.getInfo',
-                    'api_key' => $apiKey,
-                    'format' => 'json',
-                    'artist' => $artist,
-                    'track' => $title,
+        try {
+            $result = Cache::remember($cacheKey, now()->addHours(12), function () use ($artist, $title): string {
+                return $this->musicBrainzArtwork($artist, $title)
+                    ?? $this->lastFmArtwork($artist, $title)
+                    ?? self::NO_ARTWORK;
+            });
+
+            return $result === self::NO_ARTWORK ? null : $result;
+        } catch (Throwable) {
+            // Cache/provider failures must not make an otherwise healthy stream appear offline.
+            return null;
+        }
+    }
+
+    /**
+     * Find the recording, then prefer its earliest non-compilation album release group.
+     */
+    private function musicBrainzArtwork(string $artist, string $title): ?string
+    {
+        try {
+            $response = Http::acceptJson()
+                ->withUserAgent('CloudTunes/1.0 (https://github.com/linuxguy421/cloudtunes)')
+                ->timeout(5)
+                ->get('https://musicbrainz.org/ws/2/recording/', [
+                    'query' => 'recording:"'.$this->escapeLucene($title).'" AND artist:"'.$this->escapeLucene($artist).'"',
+                    'fmt' => 'json',
+                    'limit' => 10,
                 ]);
 
-                if (! $response->successful()) {
-                    return null;
-                }
-
-                $images = $response->json('track.album.image', []);
-
-                if (! is_array($images)) {
-                    return null;
-                }
-
-                foreach (array_reverse($images) as $image) {
-                    $url = is_array($image) ? ($image['#text'] ?? null) : null;
-
-                    if (is_string($url) && filter_var($url, FILTER_VALIDATE_URL)) {
-                        return $url;
-                    }
-                }
-            } catch (Throwable) {
+            if (! $response->successful()) {
                 return null;
             }
 
+            $recordings = $response->json('recordings', []);
+            if (! is_array($recordings)) {
+                return null;
+            }
+
+            $groups = [];
+
+            foreach ($recordings as $recording) {
+                if (! is_array($recording)
+                    || $this->normalize((string) ($recording['title'] ?? '')) !== $this->normalize($title)
+                    || (int) ($recording['score'] ?? 0) < 90
+                    || ! $this->artistCreditMatches($recording['artist-credit'] ?? [], $artist)) {
+                    continue;
+                }
+
+                foreach (($recording['releases'] ?? []) as $release) {
+                    $group = is_array($release) ? ($release['release-group'] ?? null) : null;
+                    if (! is_array($group) || empty($group['id']) || ($group['primary-type'] ?? null) !== 'Album') {
+                        continue;
+                    }
+
+                    $secondaryTypes = array_map('strtolower', $group['secondary-types'] ?? []);
+                    if (array_intersect($secondaryTypes, ['compilation', 'live', 'remix', 'soundtrack']) !== []) {
+                        continue;
+                    }
+
+                    $groups[$group['id']] = [
+                        'id' => $group['id'],
+                        'date' => $group['first-release-date'] ?? $release['date'] ?? '9999',
+                    ];
+                }
+            }
+
+            if ($groups === []) {
+                return null;
+            }
+
+            uasort($groups, fn (array $a, array $b): int => strcmp($a['date'], $b['date']));
+
+            foreach ($groups as $group) {
+                $artwork = $this->coverArtForReleaseGroup($group['id']);
+                if ($artwork !== null) {
+                    return $artwork;
+                }
+            }
+        } catch (Throwable) {
             return null;
-        });
+        }
+
+        return null;
+    }
+
+    private function coverArtForReleaseGroup(string $releaseGroupId): ?string
+    {
+        try {
+            $response = Http::acceptJson()
+                ->withUserAgent('CloudTunes/1.0 (https://github.com/linuxguy421/cloudtunes)')
+                ->timeout(5)
+                ->get('https://coverartarchive.org/release-group/'.$releaseGroupId.'/');
+
+            if (! $response->successful()) {
+                return null;
+            }
+
+            $images = $response->json('images', []);
+            if (! is_array($images)) {
+                return null;
+            }
+
+            foreach ($images as $image) {
+                if (! is_array($image) || ($image['front'] ?? false) !== true) {
+                    continue;
+                }
+
+                $url = $image['thumbnails']['500'] ?? $image['thumbnails']['250'] ?? $image['image'] ?? null;
+                if (is_string($url) && filter_var($url, FILTER_VALIDATE_URL)) {
+                    // CAA metadata historically contains http URLs; use HTTPS for the browser.
+                    return preg_replace('/^http:\\/\\//i', 'https://', $url);
+                }
+            }
+        } catch (Throwable) {
+            return null;
+        }
+
+        return null;
+    }
+
+    private function lastFmArtwork(string $artist, string $title): ?string
+    {
+        $apiKey = (string) config('cloudtunes.lastfm_api_key');
+        if ($apiKey === '') {
+            return null;
+        }
+
+        try {
+            $response = Http::timeout(3)->get('https://ws.audioscrobbler.com/2.0/', [
+                'method' => 'track.getInfo',
+                'api_key' => $apiKey,
+                'format' => 'json',
+                'artist' => $artist,
+                'track' => $title,
+            ]);
+
+            if (! $response->successful()) {
+                return null;
+            }
+
+            $images = $response->json('track.album.image', []);
+            if (! is_array($images)) {
+                return null;
+            }
+
+            foreach (array_reverse($images) as $image) {
+                $url = is_array($image) ? ($image['#text'] ?? null) : null;
+                if (is_string($url) && filter_var($url, FILTER_VALIDATE_URL)) {
+                    return $url;
+                }
+            }
+        } catch (Throwable) {
+            return null;
+        }
+
+        return null;
+    }
+
+    private function artistCreditMatches(mixed $credit, string $artist): bool
+    {
+        if (! is_array($credit)) {
+            return false;
+        }
+
+        $names = [];
+        foreach ($credit as $entry) {
+            if (is_array($entry) && is_array($entry['artist'] ?? null)) {
+                $names[] = (string) ($entry['artist']['name'] ?? '');
+            }
+        }
+
+        return in_array($this->normalize($artist), array_map(fn (string $name): string => $this->normalize($name), $names), true);
+    }
+
+    private function escapeLucene(string $value): string
+    {
+        return str_replace(['\\', '"'], ['\\\\', '\\"'], $value);
+    }
+
+    private function normalize(string $value): string
+    {
+        $value = mb_strtolower(trim($value));
+        $value = preg_replace('/[^\\pL\\pN]+/u', ' ', $value) ?? $value;
+
+        return trim(preg_replace('/\\s+/u', ' ', $value) ?? $value);
     }
 
     private function nullableString(mixed $value): ?string
