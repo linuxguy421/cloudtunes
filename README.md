@@ -17,7 +17,7 @@ CloudTunes is a self-hosted internet radio platform. The primary Docker Compose 
 
    ```sh
    docker compose config --quiet
-   docker compose up --build -d
+   docker compose up --build -d --remove-orphans
    ```
 
 4. Open the public player at `http://localhost:8080/player`.
