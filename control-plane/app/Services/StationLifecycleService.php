@@ -3,7 +3,9 @@
 namespace App\Services;
 
 use App\Models\Station;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 use LogicException;
@@ -18,10 +20,11 @@ class StationLifecycleService
      *
      * @return array{station: Station, operation_id: string, changed: bool}
      */
-    public function requestStart(Station $station, ?int $actorUserId = null): array
+    public function requestStart(Station $station, User $actor): array
     {
-        return DB::transaction(function () use ($station, $actorUserId): array {
+        return DB::transaction(function () use ($station, $actor): array {
             $locked = Station::query()->whereKey($station->getKey())->lockForUpdate()->firstOrFail();
+            Gate::forUser($actor)->authorize('start', $locked);
 
             if ($locked->desired_state === Station::DESIRED_RUNNING
                 && in_array($locked->status, [...Station::START_PENDING_STATES, Station::STATUS_RUNNING], true)) {
@@ -48,7 +51,7 @@ class StationLifecycleService
 
             $locked->lifecycleEvents()->create([
                 'operation_id' => $operationId,
-                'actor_user_id' => $actorUserId,
+                'actor_user_id' => $actor->getKey(),
                 'event_type' => 'start_requested',
                 'from_state' => $fromState,
                 'to_state' => Station::STATUS_PROVISIONING,
@@ -66,10 +69,11 @@ class StationLifecycleService
      *
      * @return array{station: Station, operation_id: string, changed: bool}
      */
-    public function requestStop(Station $station, ?int $actorUserId = null): array
+    public function requestStop(Station $station, User $actor): array
     {
-        return DB::transaction(function () use ($station, $actorUserId): array {
+        return DB::transaction(function () use ($station, $actor): array {
             $locked = Station::query()->whereKey($station->getKey())->lockForUpdate()->firstOrFail();
+            Gate::forUser($actor)->authorize('stop', $locked);
 
             if ($locked->desired_state === Station::DESIRED_STOPPED
                 && in_array($locked->status, [Station::STATUS_DRAFT, Station::STATUS_STOPPING, Station::STATUS_STOPPED], true)) {
