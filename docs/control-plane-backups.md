@@ -27,7 +27,7 @@ Override the destination and retention as needed:
 
 ```sh
 BACKUP_DIR=/var/backups/cloudtunes/control-plane RETENTION_DAYS=30 \
-  ./scripts/backup-control-plane-db.sh
+  bash scripts/backup-control-plane-db.sh
 ```
 
 This backup covers the PostgreSQL database only. It does not include music files,
@@ -54,7 +54,7 @@ The timer is scheduled daily at 03:15 local system time, with a randomized delay
 After the database service is already running, use:
 
 ```sh
-./scripts/update-control-plane-dev.sh
+bash scripts/update-control-plane-dev.sh
 ```
 
 The wrapper requires a successful backup before Compose runs the application update.
