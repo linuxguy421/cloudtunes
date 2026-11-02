@@ -102,7 +102,7 @@ class StationLifecycleService
 
             $locked->lifecycleEvents()->create([
                 'operation_id' => $operationId,
-                'actor_user_id' => $actorUserId,
+                'actor_user_id' => $actor->getKey(),
                 'event_type' => 'stop_requested',
                 'from_state' => $fromState,
                 'to_state' => $targetObservedState,
