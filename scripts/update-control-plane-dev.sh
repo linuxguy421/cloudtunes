@@ -14,7 +14,7 @@ COMPOSE_FILE="${COMPOSE_FILE:-${REPO_ROOT}/compose.control-plane.dev.yaml}"
 }
 
 export COMPOSE_FILE
-"$SCRIPT_DIR/backup-control-plane-db.sh"
+bash "$SCRIPT_DIR/backup-control-plane-db.sh"
 
 compose=(docker compose --project-directory "$REPO_ROOT" -f "$COMPOSE_FILE")
 "${compose[@]}" up --build -d control-plane control-plane-worker
