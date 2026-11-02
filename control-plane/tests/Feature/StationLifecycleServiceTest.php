@@ -101,6 +101,23 @@ class StationLifecycleServiceTest extends TestCase
         $this->assertSame(['playlist' => 'my-music'], $result['station']->configuration);
     }
 
+    public function test_repeated_stop_request_is_idempotent_while_stopping(): void
+    {
+        $station = $this->station([
+            'status' => Station::STATUS_LIVE,
+            'desired_state' => Station::DESIRED_RUNNING,
+        ]);
+        $service = app(StationLifecycleService::class);
+
+        $first = $service->requestStop($station);
+        $second = $service->requestStop($station->fresh());
+
+        $this->assertTrue($first['changed']);
+        $this->assertFalse($second['changed']);
+        $this->assertSame($first['operation_id'], $second['operation_id']);
+        $this->assertDatabaseCount('station_lifecycle_events', 1);
+    }
+
     public function test_runtime_cannot_report_live_after_stop_was_requested(): void
     {
         $station = $this->station();
