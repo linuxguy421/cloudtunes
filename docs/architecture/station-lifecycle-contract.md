@@ -33,8 +33,8 @@ Legacy `running` and `error` values remain readable during the transition from t
 
 `App\\Services\\StationLifecycleService` provides:
 
-- `requestStart(Station, actorUserId)`: transactionally sets desired state to `running`, moves observed status to `provisioning`, and writes a `start_requested` event.
-- `requestStop(Station, actorUserId)`: transactionally sets desired state to `stopped`; active stations move to `stopping`. Draft/stopped requests are no-ops.
+- `requestStart(Station, User actor)`: authorizes the actor through the station policy, then transactionally sets desired state to `running`, moves observed status to `provisioning`, and writes a `start_requested` event.
+- `requestStop(Station, User actor)`: authorizes the actor through the station policy, then transactionally sets desired state to `stopped`; active stations move to `stopping`. Draft/stopped requests are no-ops.
 - `reportObservedState(Station, state, operationId, message)`: accepts observations from the trusted runtime controller, updates health/error fields, and writes a `runtime_state_changed` event. The operation ID must match the latest start/stop intent so stale worker callbacks cannot overwrite newer desired state.
 
 All state-changing operations lock the station row and use a database transaction. Repeated start/stop requests are idempotent. A stale controller cannot report an active state after stop has been requested, or report stopped while the desired state is running.
