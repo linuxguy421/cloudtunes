@@ -72,7 +72,7 @@ class StationLifecycleService
             $locked = Station::query()->whereKey($station->getKey())->lockForUpdate()->firstOrFail();
 
             if ($locked->desired_state === Station::DESIRED_STOPPED
-                && in_array($locked->status, [Station::STATUS_DRAFT, Station::STATUS_STOPPED], true)) {
+                && in_array($locked->status, [Station::STATUS_DRAFT, Station::STATUS_STOPPING, Station::STATUS_STOPPED], true)) {
                 $lastOperation = $locked->lifecycleEvents()
                     ->where('event_type', 'stop_requested')
                     ->latest('id')
