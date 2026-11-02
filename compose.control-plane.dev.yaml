@@ -26,6 +26,10 @@ services:
       APP_KEY: "base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
       APP_URL: http://localhost:18080
       CLOUDTUNES_PUBLIC_REGISTRATION_ENABLED: ${CLOUDTUNES_PUBLIC_REGISTRATION_ENABLED:-false}
+      ICECAST_STATUS_URL: ${ICECAST_STATUS_URL:-http://host.docker.internal:8000/status-json.xsl}
+      ICECAST_PUBLIC_URL: ${ICECAST_PUBLIC_URL:-http://localhost:8000}
+      ICECAST_MOUNT: ${ICECAST_MOUNT:-/default0.ogg}
+      LASTFM_API_KEY: ${LASTFM_API_KEY:-}
       LOG_CHANNEL: stderr
       DB_CONNECTION: pgsql
       DB_HOST: control-plane-db
@@ -47,6 +51,10 @@ services:
     # process can lose the Compose-provided environment in this dev setup.
     command: ["php","-S","0.0.0.0:8080","-t","public","public/index.php"]
     ports: ["18080:8080"]
+    # Reach an Icecast port published on the host without joining the live radio
+    # Compose network or changing any Icecast/Ices service configuration.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       control-plane-migrate: { condition: service_completed_successfully }
     volumes: ["control-plane-storage:/var/www/control-plane/storage"]
