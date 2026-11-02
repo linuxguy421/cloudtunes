@@ -35,11 +35,11 @@ The primary Compose deployment runs the Laravel control plane/player alongside t
 
    ```sh
    docker compose config --quiet
-   docker compose up --build -d
+   docker compose up --build -d --remove-orphans
    docker compose ps
    ```
 
-   The migration job runs before the Laravel web and worker containers start.
+   The migration job runs before the Laravel web and worker containers start. The `--remove-orphans` flag also stops/removes the old `frontend` and `memcached` containers from the previous Compose definition; it does not remove named volumes.
 
 ## Endpoints
 
@@ -71,7 +71,7 @@ docker compose exec -T control-plane-db \
   -d cloudtunes_control_plane < cloudtunes-control-plane-dev.dump
 
 # 4. Start the full stack. The migration job will see the restored migration history.
-docker compose up --build -d
+docker compose up --build -d --remove-orphans
 ```
 
 Keep the dump until the primary deployment is verified and backed up. If the primary database has already had migrations or application data written to it, stop and take a fresh backup before attempting any restore; do not blindly restore over it. Do not point two PostgreSQL containers at the same data directory, and do not delete either database volume during this transition.
@@ -88,7 +88,7 @@ docker compose ps
 docker compose logs -f control-plane control-plane-worker icecast ices
 
 # Apply application updates and pending migrations
-docker compose up --build -d
+docker compose up --build -d --remove-orphans
 
 # Stop services while preserving all named volumes
 docker compose down
