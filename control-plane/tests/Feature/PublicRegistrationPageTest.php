@@ -9,6 +9,22 @@ class PublicRegistrationPageTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // The Compose test runner may inherit APP_ENV=local. Exempt this test
+        // route only; production browser registration remains CSRF-protected.
+        \\Illuminate\\Foundation\\Http\\Middleware\\ValidateCsrfToken::except(['register']);
+    }
+
+    protected function tearDown(): void
+    {
+        \\Illuminate\\Foundation\\Http\\Middleware\\ValidateCsrfToken::flushState();
+
+        parent::tearDown();
+    }
+
     public function test_registration_page_is_public_and_linked_from_login(): void
     {
         config(['cloudtunes.public_registration_enabled' => true]);
