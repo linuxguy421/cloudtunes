@@ -38,7 +38,12 @@ class StationLifecycleServiceTest extends TestCase
     public function test_start_request_records_intent_without_claiming_station_is_live(): void
     {
         $station = $this->station();
-        $result = app(StationLifecycleService::class)->requestStart($station, 17);
+        $actor = User::query()->create([
+            'name' => 'Lifecycle Actor',
+            'email' => Str::uuid().'@example.test',
+            'password' => 'a-long-test-password',
+        ]);
+        $result = app(StationLifecycleService::class)->requestStart($station, $actor->id);
 
         $this->assertTrue($result['changed']);
         $this->assertSame(Station::DESIRED_RUNNING, $result['station']->desired_state);
@@ -48,7 +53,7 @@ class StationLifecycleServiceTest extends TestCase
         $this->assertDatabaseHas('station_lifecycle_events', [
             'station_id' => $station->id,
             'operation_id' => $result['operation_id'],
-            'actor_user_id' => 17,
+            'actor_user_id' => $actor->id,
             'event_type' => 'start_requested',
             'from_state' => Station::STATUS_DRAFT,
             'to_state' => Station::STATUS_PROVISIONING,
@@ -69,21 +74,16 @@ class StationLifecycleServiceTest extends TestCase
         $this->assertDatabaseCount('station_lifecycle_events', 1);
     }
 
-    public function test_stop_request_preserves_draft_state_and_configuration(): void
+    public function test_stopping_a_draft_station_is_an_idempotent_no_op(): void
     {
         $station = $this->station(['configuration' => ['playlist' => 'my-music']]);
         $result = app(StationLifecycleService::class)->requestStop($station);
 
-        $this->assertTrue($result['changed']);
+        $this->assertFalse($result['changed']);
         $this->assertSame(Station::DESIRED_STOPPED, $result['station']->desired_state);
         $this->assertSame(Station::STATUS_DRAFT, $result['station']->status);
         $this->assertSame(['playlist' => 'my-music'], $result['station']->configuration);
-        $this->assertDatabaseHas('station_lifecycle_events', [
-            'station_id' => $station->id,
-            'event_type' => 'stop_requested',
-            'from_state' => Station::STATUS_DRAFT,
-            'to_state' => Station::STATUS_DRAFT,
-        ]);
+        $this->assertDatabaseCount('station_lifecycle_events', 0);
     }
 
     public function test_stop_request_moves_active_station_to_stopping(): void
@@ -91,12 +91,14 @@ class StationLifecycleServiceTest extends TestCase
         $station = $this->station([
             'status' => Station::STATUS_LIVE,
             'desired_state' => Station::DESIRED_RUNNING,
+            'configuration' => ['playlist' => 'my-music'],
         ]);
 
         $result = app(StationLifecycleService::class)->requestStop($station);
 
         $this->assertSame(Station::DESIRED_STOPPED, $result['station']->desired_state);
         $this->assertSame(Station::STATUS_STOPPING, $result['station']->status);
+        $this->assertSame(['playlist' => 'my-music'], $result['station']->configuration);
     }
 
     public function test_runtime_cannot_report_live_after_stop_was_requested(): void
