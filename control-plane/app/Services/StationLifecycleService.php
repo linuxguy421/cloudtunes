@@ -133,6 +133,7 @@ class StationLifecycleService
                 Station::STATUS_CONNECTING,
                 Station::STATUS_LIVE,
                 Station::STATUS_DEGRADED,
+                Station::STATUS_RUNNING,
             ];
 
             if (in_array($observedState, $activeStates, true)
