@@ -1,81 +1,89 @@
 # Docker Compose deployment
 
-This is the initial Compose deployment path. The existing Kubernetes manifests remain available and are not changed by this setup.
+The primary Compose deployment runs the Laravel control plane/player alongside the existing Icecast and Ices services. The old `radio-frontend` and Memcached services are no longer part of the Compose runtime.
 
 ## Requirements
 
 - Docker Engine
-- Docker Compose v2 (docker compose)
-- Enough disk space to build the existing images and store your music
+- Docker Compose v2 (`docker compose`)
+- Enough disk space to build the Icecast, Ices, and Laravel images and store your music
 
 ## First start
 
-1. Put at least one supported audio file in docker-ices/data/station_0/ before building. The current Ices image processes this directory during image build; the directory is ignored by Git so your music is not committed.
-2. Copy the sample environment file and adjust it for your host:
+1. Put at least one supported audio file in `docker-ices/data/station_0/` before the first creation of the `music-data` volume.
+2. Copy the sample environment file:
 
-    cp .env.example .env
+   ```sh
+   cp .env.example .env
+   ```
 
-3. Generate local service credentials before starting Compose:
+3. Generate the Laravel application key and a strong database password:
 
-    bash scripts/init-secrets.sh
+   ```sh
+   php -r 'echo "base64:".base64_encode(random_bytes(32)).PHP_EOL;'
+   ```
 
-   This creates four files under `secrets/` with restrictive permissions. The directory is excluded from Git. Back up these files securely; do not paste or commit their contents. The Ices and Icecast source password files are kept identical by the initializer.
-4. If listeners will connect from another computer, set ICECAST_PUBLIC_URL in .env to a URL reachable from those clients, such as http://192.0.2.10:8000. Replace the example address with your Docker host's actual LAN/DNS address.
-5. Validate and start the stack:
+   Put the generated value in `CONTROL_PLANE_APP_KEY` in `.env`. Generate a separate long random value for `CONTROL_PLANE_DB_PASSWORD`. Keep both values stable and back them up securely; changing the application key invalidates existing encrypted sessions.
+4. Generate the Icecast/Ices credential files:
 
-    docker compose config --quiet
-    docker compose up --build -d
-    docker compose ps
+   ```sh
+   bash scripts/init-secrets.sh
+   ```
 
-The first build may take a while because the existing frontend image compiles Nginx and installs its PHP dependencies.
+5. Set `ICECAST_PUBLIC_URL` to a URL reachable from listener browsers. For remote listeners, do not use `localhost`; use the server's DNS name or public IP. If you use HTTPS for the Laravel site, configure a TLS reverse proxy in front of the control-plane port and set `SESSION_SECURE_COOKIE=true`.
+6. Validate and start:
+
+   ```sh
+   docker compose config --quiet
+   docker compose up --build -d
+   docker compose ps
+   ```
+
+   The migration job runs before the Laravel web and worker containers start.
 
 ## Endpoints
 
-- Web interface: http://localhost:8080 (or your configured WEB_PORT)
-- Icecast status: http://localhost:8000/status-json.xsl (or your configured ICECAST_PORT)
-- Audio stream: http://localhost:8000/default0.ogg
+- Laravel player and control plane: `http://localhost:8080/player` (or your configured `CONTROL_PLANE_PORT`)
+- Laravel health endpoint: `http://localhost:8080/up`
+- Icecast status: `http://localhost:8000/status-json.xsl` (or your configured `ICECAST_PORT`)
+- Audio stream: `http://localhost:8000/default0.ogg`
 
-Use the Docker host's address instead of localhost when connecting from another device. The browser connects directly to Icecast, so ICECAST_PUBLIC_URL must be reachable from the listener's browser.
+The Laravel container reads Icecast status over the private Compose network at `http://icecast:8000/status-json.xsl`. Listener browsers connect directly to Icecast using `ICECAST_PUBLIC_URL`; Laravel does not proxy audio.
 
-Memcached and the Ices control port are not published on the host. Services communicate over the private Compose network using service DNS.
+## Database and persistent data
 
-## Data and configuration persistence
+The control plane uses a dedicated PostgreSQL 16 service and the named `control-plane-db-data` volume. Laravel sessions, cache, and queued jobs are stored in that database. The `control-plane-storage` volume persists Laravel storage.
 
-Compose creates named volumes for Icecast configuration, Ices configuration, and the generated playlist. Music is kept in the named music-data volume. The first time that volume is created, Docker initializes it from the built image's /data directory, which is why you must add music before the first startup/build.
+The first start creates an empty control-plane database. If you have users or station records in the separate development stack, back up that database and deliberately restore it into the primary database before treating the primary deployment as authoritative. Do not point two PostgreSQL containers at the same data directory, and do not delete either database volume during this transition.
 
-Named volumes survive container recreation and image rebuilds. Do not use docker compose down -v unless you deliberately want to delete these volumes and their contents.
-
-To add more music after the first startup, copy it into the running Ices container's persistent music directory and regenerate the playlist:
-
-    docker compose cp /path/to/music/. ices:/data/station_0/
-    docker compose exec ices /etc/ices/init_songs.sh
-    docker compose exec ices /etc/ices/process_songs.sh
-    docker compose exec ices /etc/ices/update_songs.sh
-    docker compose restart ices
-
-The current song-processing scripts are inherited from the original image and have limited error handling. This initial Compose phase does not redesign that workflow.
+Icecast configuration, music, Ices playlists, and Ices configuration continue to use their existing named volumes. Named volumes survive container recreation and image rebuilds. Never use `docker compose down -v` for routine updates or shutdowns; it deletes persistent data.
 
 ## Common operations
 
-    # View service status
-    docker compose ps
+```sh
+# View service status
+docker compose ps
 
-    # Follow logs
-    docker compose logs -f
+# Follow application and radio logs
+docker compose logs -f control-plane control-plane-worker icecast ices
 
-    # Rebuild and recreate services after source changes
-    docker compose up --build -d
+# Apply application updates and pending migrations
+docker compose up --build -d
 
-    # Stop services but keep data
-    docker compose down
+# Stop services while preserving all named volumes
+docker compose down
+```
 
-Do not use docker compose down -v for routine updates or shutdowns; it removes the named volumes.
+## Legacy frontend retirement
 
-## Scope and known limitations
+The legacy `radio-frontend` service and its Memcached dependency have been removed from the primary Compose runtime. Their source and Kubernetes manifests remain in the repository temporarily as rollback/reference material; they are not started by `docker compose up`.
 
-This is the first deployment foundation, not the final management workflow. The existing Dockerfiles retain their current base images and build steps. The Compose configuration now expects file-backed local secrets for the Icecast source, relay, and admin credentials and the Ices source credential. Run the initializer above before starting. These local files are not encrypted at rest; protect the host and backups. Existing named configuration volumes can differ from repository files, so the secret-rendering change must be validated against a backup in an isolated deployment before a live rollout. The external Last.fm integration retains its existing configuration. The frontend now accepts Compose service URLs through environment variables while retaining Kubernetes service-name defaults when those variables are not set.
+Do not remove the legacy source tree until the Laravel player has been validated in the primary deployment and the rollback window has passed.
 
+## Operational notes
 
-## Audio player dependency
-
-The frontend uses the Video.js 10 audio-neutral preset from a version-pinned jsDelivr CDN bundle. This avoids installing browser-player packages during the PHP image build and removes the deprecated Plyr Yarn dependency that failed under the image's Node.js 16 runtime. The browser must be able to reach jsDelivr to load the player UI; the underlying Icecast audio URL must also be reachable from the listener's browser.
+- The Laravel player is public; dashboard and station management require authentication.
+- Public registration is disabled by default. Use the documented bootstrap procedure to create/promote the initial administrator.
+- The Laravel application currently uses PHP's built-in HTTP server in this Compose setup. Put it behind a TLS-terminating reverse proxy for any internet-facing deployment; a production PHP-FPM/web-server arrangement is a later hardening step.
+- This Compose transition does not provision or start per-user Icecast stations. The player still targets the configured mount, defaulting to `/default0.ogg`.
+- Do not combine this primary Compose file with `compose.control-plane.dev.yaml`; that file is an isolated development/test stack with a separate database.
