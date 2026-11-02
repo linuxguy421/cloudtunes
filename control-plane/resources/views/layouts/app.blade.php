@@ -64,6 +64,9 @@
                 </form>
             @else
                 <a href="{{ route('login') }}">Sign in</a>
+                @if (config('cloudtunes.public_registration_enabled'))
+                    <a href="{{ route('register') }}">Register</a>
+                @endif
             @endauth
         </nav>
     </header>
