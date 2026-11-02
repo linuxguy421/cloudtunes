@@ -1,9 +1,9 @@
 <?php
 
-namespace App\\Services;
+namespace App\Services;
 
-use Illuminate\\Support\\Facades\\Cache;
-use Illuminate\\Support\\Facades\\Http;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 use Throwable;
 
 class IcecastNowPlaying
@@ -211,7 +211,7 @@ class IcecastNowPlaying
                 $url = $image['thumbnails']['500'] ?? $image['thumbnails']['250'] ?? $image['image'] ?? null;
                 if (is_string($url) && filter_var($url, FILTER_VALIDATE_URL)) {
                     // CAA metadata historically contains http URLs; use HTTPS for the browser.
-                    return preg_replace('/^http:\\/\\//i', 'https://', $url);
+                    return preg_replace('/^http:\/\//i', 'https://', $url);
                 }
             }
         } catch (Throwable) {
@@ -283,9 +283,9 @@ class IcecastNowPlaying
     private function normalize(string $value): string
     {
         $value = mb_strtolower(trim($value));
-        $value = preg_replace('/[^\\pL\\pN]+/u', ' ', $value) ?? $value;
+        $value = preg_replace('/[^\pL\pN]+/u', ' ', $value) ?? $value;
 
-        return trim(preg_replace('/\\s+/u', ' ', $value) ?? $value);
+        return trim(preg_replace('/\s+/u', ' ', $value) ?? $value);
     }
 
     private function nullableString(mixed $value): ?string
