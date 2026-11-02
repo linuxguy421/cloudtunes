@@ -117,8 +117,8 @@ class StationLifecycleService
     public function reportObservedState(
         Station $station,
         string $observedState,
+        string $operationId,
         ?string $message = null,
-        ?string $operationId = null,
     ): Station {
         if (! in_array($observedState, Station::OBSERVED_STATES, true)) {
             throw new InvalidArgumentException("Unsupported station observed state: {$observedState}");
@@ -126,6 +126,15 @@ class StationLifecycleService
 
         return DB::transaction(function () use ($station, $observedState, $message, $operationId): Station {
             $locked = Station::query()->whereKey($station->getKey())->lockForUpdate()->firstOrFail();
+
+            $latestIntentOperation = $locked->lifecycleEvents()
+                ->whereIn('event_type', ['start_requested', 'stop_requested'])
+                ->latest('id')
+                ->value('operation_id');
+
+            if ($latestIntentOperation === null || ! hash_equals($latestIntentOperation, $operationId)) {
+                throw new LogicException('Runtime observation belongs to a stale or unknown lifecycle operation.');
+            }
 
             $requiresRunning = [
                 Station::STATUS_PROVISIONING,
@@ -162,7 +171,7 @@ class StationLifecycleService
             ])->save();
 
             $locked->lifecycleEvents()->create([
-                'operation_id' => $operationId ?: (string) Str::uuid(),
+                'operation_id' => $operationId,
                 'event_type' => 'runtime_state_changed',
                 'from_state' => $fromState,
                 'to_state' => $observedState,
