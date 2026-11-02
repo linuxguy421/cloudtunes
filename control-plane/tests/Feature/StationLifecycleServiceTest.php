@@ -166,7 +166,7 @@ class StationLifecycleServiceTest extends TestCase
     {
         $station = $this->station();
         $service = app(StationLifecycleService::class);
-        $start = $service->requestStart($station);
+        $start = $service->requestStart($station, $station->owner);
         $updated = $service->reportObservedState(
             $station,
             Station::STATUS_FAILED,
@@ -191,7 +191,7 @@ class StationLifecycleServiceTest extends TestCase
         $station = $this->station();
         $service = app(StationLifecycleService::class);
         $service->requestStart($station);
-        $stop = $service->requestStop($station);
+        $stop = $service->requestStop($station, $station->owner);
 
         $this->expectException(LogicException::class);
         $service->reportObservedState($station, Station::STATUS_CONNECTING, $stop['operation_id']);
