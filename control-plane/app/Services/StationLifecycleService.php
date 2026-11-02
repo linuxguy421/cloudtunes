@@ -24,7 +24,7 @@ class StationLifecycleService
             $locked = Station::query()->whereKey($station->getKey())->lockForUpdate()->firstOrFail();
 
             if ($locked->desired_state === Station::DESIRED_RUNNING
-                && in_array($locked->status, Station::START_PENDING_STATES, true)) {
+                && in_array($locked->status, [...Station::START_PENDING_STATES, Station::STATUS_RUNNING], true)) {
                 $lastOperation = $locked->lifecycleEvents()
                     ->where('event_type', 'start_requested')
                     ->latest('id')
@@ -127,7 +127,7 @@ class StationLifecycleService
         return DB::transaction(function () use ($station, $observedState, $message, $operationId): Station {
             $locked = Station::query()->whereKey($station->getKey())->lockForUpdate()->firstOrFail();
 
-            $activeStates = [
+            $requiresRunning = [
                 Station::STATUS_PROVISIONING,
                 Station::STATUS_STARTING,
                 Station::STATUS_CONNECTING,
@@ -136,21 +136,27 @@ class StationLifecycleService
                 Station::STATUS_RUNNING,
             ];
 
-            if (in_array($observedState, $activeStates, true)
+            $requiresStopped = [
+                Station::STATUS_DRAFT,
+                Station::STATUS_STOPPING,
+                Station::STATUS_STOPPED,
+            ];
+
+            if (in_array($observedState, $requiresRunning, true)
                 && $locked->desired_state !== Station::DESIRED_RUNNING) {
                 throw new LogicException('An active runtime state cannot be reported while the desired state is stopped.');
             }
 
-            if ($observedState === Station::STATUS_STOPPED
+            if (in_array($observedState, $requiresStopped, true)
                 && $locked->desired_state !== Station::DESIRED_STOPPED) {
-                throw new LogicException('A stopped runtime cannot satisfy a running station request.');
+                throw new LogicException('A stopped or stopping runtime state cannot satisfy a running station request.');
             }
 
             $fromState = $locked->status;
             $locked->forceFill([
                 'status' => $observedState,
                 'last_health_check_at' => now(),
-                'last_error' => in_array($observedState, [Station::STATUS_FAILED, Station::STATUS_DEGRADED], true)
+                'last_error' => in_array($observedState, [Station::STATUS_FAILED, Station::STATUS_DEGRADED, Station::STATUS_ERROR], true)
                     ? $message
                     : null,
             ])->save();
