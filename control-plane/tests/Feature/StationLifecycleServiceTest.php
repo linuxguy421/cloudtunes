@@ -115,11 +115,12 @@ class StationLifecycleServiceTest extends TestCase
     {
         $station = $this->station();
         $service = app(StationLifecycleService::class);
-        $service->requestStart($station);
+        $start = $service->requestStart($station);
 
         $updated = $service->reportObservedState(
             $station,
             Station::STATUS_LIVE,
+            $start['operation_id'],
             'Source connected and mount is visible.',
         );
 
@@ -137,9 +138,12 @@ class StationLifecycleServiceTest extends TestCase
     public function test_failed_runtime_observation_persists_safe_error_message(): void
     {
         $station = $this->station();
-        $updated = app(StationLifecycleService::class)->reportObservedState(
+        $service = app(StationLifecycleService::class);
+        $start = $service->requestStart($station);
+        $updated = $service->reportObservedState(
             $station,
             Station::STATUS_FAILED,
+            $start['operation_id'],
             'Playback worker exited unexpectedly.',
         );
 
@@ -152,7 +156,7 @@ class StationLifecycleServiceTest extends TestCase
         $station = $this->station();
 
         $this->expectException(\InvalidArgumentException::class);
-        app(StationLifecycleService::class)->reportObservedState($station, 'container_deleted');
+        app(StationLifecycleService::class)->reportObservedState($station, 'container_deleted', (string) Str::uuid());
     }
 
     public function test_active_observation_requires_running_desired_state(): void
@@ -160,6 +164,6 @@ class StationLifecycleServiceTest extends TestCase
         $station = $this->station();
 
         $this->expectException(LogicException::class);
-        app(StationLifecycleService::class)->reportObservedState($station, Station::STATUS_CONNECTING);
+        app(StationLifecycleService::class)->reportObservedState($station, Station::STATUS_CONNECTING, (string) Str::uuid());
     }
 }
