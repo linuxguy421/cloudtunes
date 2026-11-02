@@ -36,29 +36,84 @@ services:
     networks:
       - cloudtunes
 
-  memcached:
-    build:
-      context: ./docker-memcached
+  control-plane-db:
+    image: postgres:16-alpine
     restart: unless-stopped
+    environment:
+      POSTGRES_DB: cloudtunes_control_plane
+      POSTGRES_USER: cloudtunes
+      POSTGRES_PASSWORD: ${CONTROL_PLANE_DB_PASSWORD:?Set CONTROL_PLANE_DB_PASSWORD in .env}
+    volumes:
+      - control-plane-db-data:/var/lib/postgresql/data
+    networks:
+      - cloudtunes
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cloudtunes -d cloudtunes_control_plane"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  control-plane-migrate:
+    build:
+      context: ./control-plane
+    restart: "no"
+    environment: &control-plane-env
+      APP_NAME: CloudTunes
+      APP_ENV: production
+      APP_DEBUG: "false"
+      APP_KEY: ${CONTROL_PLANE_APP_KEY:?Set CONTROL_PLANE_APP_KEY in .env}
+      APP_URL: ${APP_URL:-http://localhost:8080}
+      CLOUDTUNES_PUBLIC_REGISTRATION_ENABLED: ${CLOUDTUNES_PUBLIC_REGISTRATION_ENABLED:-false}
+      ICECAST_STATUS_URL: http://icecast:8000/status-json.xsl
+      ICECAST_PUBLIC_URL: ${ICECAST_PUBLIC_URL:-http://localhost:8000}
+      ICECAST_MOUNT: ${ICECAST_MOUNT:-/default0.ogg}
+      LASTFM_API_KEY: ${LASTFM_API_KEY:-}
+      LOG_CHANNEL: stderr
+      LOG_LEVEL: info
+      DB_CONNECTION: pgsql
+      DB_HOST: control-plane-db
+      DB_PORT: "5432"
+      DB_DATABASE: cloudtunes_control_plane
+      DB_USERNAME: cloudtunes
+      DB_PASSWORD: ${CONTROL_PLANE_DB_PASSWORD:?Set CONTROL_PLANE_DB_PASSWORD in .env}
+      QUEUE_CONNECTION: database
+      SESSION_DRIVER: database
+      SESSION_SECURE_COOKIE: ${SESSION_SECURE_COOKIE:-false}
+      CACHE_STORE: database
+    command: ["php", "artisan", "migrate", "--force"]
+    depends_on:
+      control-plane-db:
+        condition: service_healthy
     networks:
       - cloudtunes
 
-  frontend:
+  control-plane:
     build:
-      context: ./radio-frontend
+      context: ./control-plane
     restart: unless-stopped
-    depends_on:
-      icecast:
-        condition: service_healthy
-      memcached:
-        condition: service_started
-    environment:
-      MEMCACHED_HOST: memcached
-      MEMCACHED_PORT: "11211"
-      ICECAST_STATUS_URL: http://icecast:8000/status-json.xsl
-      ICECAST_PUBLIC_URL: ${ICECAST_PUBLIC_URL:-http://localhost:8000}
+    environment: *control-plane-env
+    command: ["php", "-S", "0.0.0.0:8080", "-t", "public", "public/index.php"]
     ports:
-      - "${WEB_PORT:-8080}:80"
+      - "${CONTROL_PLANE_PORT:-8080}:8080"
+    volumes:
+      - control-plane-storage:/var/www/control-plane/storage
+    depends_on:
+      control-plane-migrate:
+        condition: service_completed_successfully
+    networks:
+      - cloudtunes
+
+  control-plane-worker:
+    build:
+      context: ./control-plane
+    restart: unless-stopped
+    environment: *control-plane-env
+    command: ["php", "artisan", "queue:work", "--sleep=1", "--tries=3", "--timeout=90"]
+    volumes:
+      - control-plane-storage:/var/www/control-plane/storage
+    depends_on:
+      control-plane-migrate:
+        condition: service_completed_successfully
     networks:
       - cloudtunes
 
@@ -81,3 +136,5 @@ volumes:
   music-data:
   ices-playlists:
   ices-config:
+  control-plane-db-data:
+  control-plane-storage:
