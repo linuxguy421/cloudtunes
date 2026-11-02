@@ -105,10 +105,11 @@ class StationLifecycleServiceTest extends TestCase
     {
         $station = $this->station();
         $service = app(StationLifecycleService::class);
+        $start = $service->requestStart($station);
         $service->requestStop($station);
 
         $this->expectException(LogicException::class);
-        $service->reportObservedState($station, Station::STATUS_LIVE);
+        $service->reportObservedState($station, Station::STATUS_LIVE, $start['operation_id']);
     }
 
     public function test_runtime_observation_records_health_and_event(): void
@@ -162,8 +163,11 @@ class StationLifecycleServiceTest extends TestCase
     public function test_active_observation_requires_running_desired_state(): void
     {
         $station = $this->station();
+        $service = app(StationLifecycleService::class);
+        $service->requestStart($station);
+        $stop = $service->requestStop($station);
 
         $this->expectException(LogicException::class);
-        app(StationLifecycleService::class)->reportObservedState($station, Station::STATUS_CONNECTING, (string) Str::uuid());
+        $service->reportObservedState($station, Station::STATUS_CONNECTING, $stop['operation_id']);
     }
 }
