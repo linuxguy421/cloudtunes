@@ -103,7 +103,7 @@ class StationLifecycleServiceTest extends TestCase
             'configuration' => ['playlist' => 'my-music'],
         ]);
 
-        $result = app(StationLifecycleService::class)->requestStop($station);
+        $result = app(StationLifecycleService::class)->requestStop($station, $station->owner);
 
         $this->assertSame(Station::DESIRED_STOPPED, $result['station']->desired_state);
         $this->assertSame(Station::STATUS_STOPPING, $result['station']->status);
@@ -190,7 +190,7 @@ class StationLifecycleServiceTest extends TestCase
     {
         $station = $this->station();
         $service = app(StationLifecycleService::class);
-        $service->requestStart($station);
+        $service->requestStart($station, $station->owner);
         $stop = $service->requestStop($station, $station->owner);
 
         $this->expectException(LogicException::class);
