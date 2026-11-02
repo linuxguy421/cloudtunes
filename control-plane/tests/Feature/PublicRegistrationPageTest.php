@@ -15,12 +15,12 @@ class PublicRegistrationPageTest extends TestCase
 
         // The Compose test runner may inherit APP_ENV=local. Exempt this test
         // route only; production browser registration remains CSRF-protected.
-        \\Illuminate\\Foundation\\Http\\Middleware\\ValidateCsrfToken::except(['register']);
+        \Illuminate\\Foundation\\Http\\Middleware\\ValidateCsrfToken::except(['register']);
     }
 
     protected function tearDown(): void
     {
-        \\Illuminate\\Foundation\\Http\\Middleware\\ValidateCsrfToken::flushState();
+        \Illuminate\\Foundation\\Http\\Middleware\\ValidateCsrfToken::flushState();
 
         parent::tearDown();
     }
