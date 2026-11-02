@@ -51,9 +51,10 @@
 <body>
 <div class="shell">
     <header class="topbar">
-        <a class="brand" href="{{ auth()->check() ? route('dashboard') : route('login') }}">◉ CLOUDTUNES</a>
-        @auth
-            <nav class="nav" aria-label="Main navigation">
+        <a class="brand" href="{{ auth()->check() ? route('dashboard') : route('player') }}">◉ CLOUDTUNES</a>
+        <nav class="nav" aria-label="Main navigation">
+            <a href="{{ route('player') }}">Listen</a>
+            @auth
                 <a href="{{ route('dashboard') }}">Dashboard</a>
                 <a href="{{ route('stations.index') }}">Stations</a>
                 <span class="muted">{{ auth()->user()->name }}</span>
@@ -61,8 +62,10 @@
                     @csrf
                     <button class="button secondary" type="submit">Sign out</button>
                 </form>
-            </nav>
-        @endauth
+            @else
+                <a href="{{ route('login') }}">Sign in</a>
+            @endauth
+        </nav>
     </header>
     @yield('content')
     <footer class="footer">CloudTunes · Personal radio, on your terms</footer>
