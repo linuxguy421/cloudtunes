@@ -103,7 +103,8 @@ Do not remove the legacy source tree until the Laravel player has been validated
 ## Operational notes
 
 - The Laravel player is public; dashboard and station management require authentication.
-- Public registration is disabled by default. Use the documented bootstrap procedure to create/promote the initial administrator.
+- Public registration is enabled by default at `/register`. New accounts are created with `pending` approval status; an administrator must approve them before they can create stations.
+- Administrator privileges are never self-assigned during registration. Promote the initial administrator manually with `docker compose exec control-plane php artisan cloudtunes:make-admin YOUR_EMAIL`.
 - The Laravel application currently uses PHP's built-in HTTP server in this Compose setup. Put it behind a TLS-terminating reverse proxy for any internet-facing deployment; a production PHP-FPM/web-server arrangement is a later hardening step.
 - This Compose transition does not provision or start per-user Icecast stations. The player still targets the configured mount, defaulting to `/default0.ogg`.
 - Do not combine this primary Compose file with `compose.control-plane.dev.yaml`; that file is an isolated development/test stack with a separate database.
