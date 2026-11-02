@@ -5,8 +5,8 @@ namespace Tests\Feature;
 use App\Models\Station;
 use App\Models\User;
 use App\Services\StationLifecycleService;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use LogicException;
 use Tests\TestCase;
@@ -38,12 +38,8 @@ class StationLifecycleServiceTest extends TestCase
     public function test_start_request_records_intent_without_claiming_station_is_live(): void
     {
         $station = $this->station();
-        $actor = User::query()->create([
-            'name' => 'Lifecycle Actor',
-            'email' => Str::uuid().'@example.test',
-            'password' => 'a-long-test-password',
-        ]);
-        $result = app(StationLifecycleService::class)->requestStart($station, $actor->id);
+        $actor = $station->owner;
+        $result = app(StationLifecycleService::class)->requestStart($station, $actor);
 
         $this->assertTrue($result['changed']);
         $this->assertSame(Station::DESIRED_RUNNING, $result['station']->desired_state);
@@ -60,12 +56,25 @@ class StationLifecycleServiceTest extends TestCase
         ]);
     }
 
+    public function test_another_user_cannot_request_station_start(): void
+    {
+        $station = $this->station();
+        $otherUser = User::query()->create([
+            'name' => 'Other User',
+            'email' => Str::uuid().'@example.test',
+            'password' => 'a-long-test-password',
+        ]);
+
+        $this->expectException(AuthorizationException::class);
+        app(StationLifecycleService::class)->requestStart($station, $otherUser);
+    }
+
     public function test_repeated_start_request_is_idempotent(): void
     {
         $station = $this->station();
         $service = app(StationLifecycleService::class);
 
-        $first = $service->requestStart($station);
+        $first = $service->requestStart($station, $station->owner);
         $second = $service->requestStart($station->fresh());
 
         $this->assertTrue($first['changed']);
@@ -77,7 +86,7 @@ class StationLifecycleServiceTest extends TestCase
     public function test_stopping_a_draft_station_is_an_idempotent_no_op(): void
     {
         $station = $this->station(['configuration' => ['playlist' => 'my-music']]);
-        $result = app(StationLifecycleService::class)->requestStop($station);
+        $result = app(StationLifecycleService::class)->requestStop($station, $station->owner);
 
         $this->assertFalse($result['changed']);
         $this->assertSame(Station::DESIRED_STOPPED, $result['station']->desired_state);
@@ -109,7 +118,7 @@ class StationLifecycleServiceTest extends TestCase
         ]);
         $service = app(StationLifecycleService::class);
 
-        $first = $service->requestStop($station);
+        $first = $service->requestStop($station, $station->owner);
         $second = $service->requestStop($station->fresh());
 
         $this->assertTrue($first['changed']);
