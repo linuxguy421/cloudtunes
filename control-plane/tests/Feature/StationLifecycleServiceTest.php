@@ -75,7 +75,7 @@ class StationLifecycleServiceTest extends TestCase
         $service = app(StationLifecycleService::class);
 
         $first = $service->requestStart($station, $station->owner);
-        $second = $service->requestStart($station->fresh());
+        $second = $service->requestStart($station->fresh(), $station->owner);
 
         $this->assertTrue($first['changed']);
         $this->assertFalse($second['changed']);
@@ -119,7 +119,7 @@ class StationLifecycleServiceTest extends TestCase
         $service = app(StationLifecycleService::class);
 
         $first = $service->requestStop($station, $station->owner);
-        $second = $service->requestStop($station->fresh());
+        $second = $service->requestStop($station->fresh(), $station->owner);
 
         $this->assertTrue($first['changed']);
         $this->assertFalse($second['changed']);
@@ -131,8 +131,8 @@ class StationLifecycleServiceTest extends TestCase
     {
         $station = $this->station();
         $service = app(StationLifecycleService::class);
-        $start = $service->requestStart($station);
-        $service->requestStop($station);
+        $start = $service->requestStart($station, $station->owner);
+        $service->requestStop($station, $station->owner);
 
         $this->expectException(LogicException::class);
         $service->reportObservedState($station, Station::STATUS_LIVE, $start['operation_id']);
@@ -142,7 +142,7 @@ class StationLifecycleServiceTest extends TestCase
     {
         $station = $this->station();
         $service = app(StationLifecycleService::class);
-        $start = $service->requestStart($station);
+        $start = $service->requestStart($station, $station->owner);
 
         $updated = $service->reportObservedState(
             $station,
