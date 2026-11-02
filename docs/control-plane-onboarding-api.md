@@ -7,8 +7,9 @@ stack.
 ## First administrator
 
 1. Start the isolated development stack and apply migrations.
-2. Register the intended administrator through `POST /api/v1/register`.
-3. Promote that existing account from the control-plane container:
+2. Registration is disabled by default. For a one-time bootstrap only, set `CLOUDTUNES_PUBLIC_REGISTRATION_ENABLED=true` in the root Compose `.env` file and recreate the control-plane services.
+3. Register the intended administrator through `POST /api/v1/register`, then immediately set the flag back to `false` and recreate the services.
+4. Promote that existing account from the control-plane container:
 
 ```sh
 docker compose -f compose.control-plane.dev.yaml exec control-plane \
@@ -23,8 +24,7 @@ create a password or expose an unauthenticated admin-provisioning endpoint.
 These endpoints use Laravel's session authentication and the web middleware.
 Browser clients must use the normal session cookie and CSRF protection.
 
-- `POST /api/v1/register`: accepts `name`, `email`, `password`, and
-  `password_confirmation`. New accounts are pending approval.
+- `POST /api/v1/register`: disabled by default (returns 404); it accepts `name`, `email`, `password`, and `password_confirmation` only while the explicit bootstrap flag is enabled. New accounts are pending approval.
 - `POST /api/v1/login`: accepts `email` and `password`; returns the user's
   approval state and regenerates the session on success.
 - `POST /api/v1/logout`: ends the current session.

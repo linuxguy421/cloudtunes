@@ -30,6 +30,7 @@ class StationOnboardingTest extends TestCase
 
     public function test_registration_creates_a_pending_user_and_normalizes_email(): void
     {
+        config(['cloudtunes.public_registration_enabled' => true]);
         $response = $this->postJson('/api/v1/register', [
             'name' => 'New Listener',
             'email' => ' New@Example.test ',
@@ -53,6 +54,20 @@ class StationOnboardingTest extends TestCase
             'password' => 'another-long-password',
             'password_confirmation' => 'another-long-password',
         ])->assertUnprocessable()->assertJsonValidationErrors('email');
+    }
+
+    public function test_public_registration_is_disabled_by_default(): void
+    {
+        config(['cloudtunes.public_registration_enabled' => false]);
+
+        $this->postJson('/api/v1/register', [
+            'name' => 'Open Signup',
+            'email' => 'signup@example.test',
+            'password' => 'a-long-test-password',
+            'password_confirmation' => 'a-long-test-password',
+        ])->assertNotFound();
+
+        $this->assertDatabaseCount('users', 0);
     }
 
     public function test_pending_user_cannot_create_a_station(): void
