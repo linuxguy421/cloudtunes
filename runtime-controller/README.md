@@ -50,3 +50,14 @@ Set a private shared secret in the environment before starting the stack:
 
 The controller listens on port 8090 inside the Compose network. Its health
 endpoint is http://runtime-controller:8090/healthz.
+
+
+## Run controller tests
+
+From the repository root:
+
+    docker build -f runtime-controller/Dockerfile --target test -t cloudtunes-runtime-controller-test runtime-controller
+    docker run --rm cloudtunes-runtime-controller-test
+
+The test image is a separate build target and is not used by the Compose
+runtime service.
