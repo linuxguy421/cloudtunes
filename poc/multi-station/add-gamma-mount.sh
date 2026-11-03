@@ -46,6 +46,21 @@ for mount in root.findall("mount"):
     if mount.findtext("mount-name") == "/station-gamma.ogg":
         raise SystemExit("Gamma mount is already present; refusing to add a duplicate")
 
+# Icecast is run with -n (foreground). Find its process explicitly rather
+# than signalling the su wrapper, which may be PID 1 in the container.
+matches = []
+for entry in Path("/proc").iterdir():
+    if not entry.name.isdigit():
+        continue
+    try:
+        argv = (entry / "cmdline").read_bytes().split(b"\0")
+    except (OSError, PermissionError):
+        continue
+    if argv and argv[0].rstrip(b"\0").endswith(b"/icecast2"):
+        matches.append(int(entry.name))
+if len(matches) != 1:
+    raise SystemExit(f"Expected exactly one Icecast process; found {len(matches)}")
+
 if not backup.exists():
     shutil.copy2(config, backup)
 
@@ -62,22 +77,6 @@ account = pwd.getpwnam("icecast2")
 os.chown(temporary, account.pw_uid, account.pw_gid)
 os.chmod(temporary, 0o600)
 os.replace(temporary, config)
-
-# Icecast is run with -n (foreground). Find its process explicitly rather
-# than signalling the su wrapper, which may be PID 1 in the container.
-matches = []
-for entry in Path("/proc").iterdir():
-    if not entry.name.isdigit():
-        continue
-    try:
-        argv = (entry / "cmdline").read_bytes().split(b"\0")
-    except (OSError, PermissionError):
-        continue
-    if argv and argv[0].rstrip(b"\0").endswith(b"/icecast2"):
-        matches.append(int(entry.name))
-
-if len(matches) != 1:
-    raise SystemExit(f"Expected exactly one Icecast process; found {len(matches)}")
 
 os.kill(matches[0], signal.SIGHUP)
 print("Added the Gamma mount to the disposable Icecast config and sent SIGHUP.")
