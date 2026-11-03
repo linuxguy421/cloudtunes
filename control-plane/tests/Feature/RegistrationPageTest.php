@@ -3,8 +3,6 @@
 namespace Tests\Feature;
 
 use App\Models\User;
-use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
-use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -16,11 +14,16 @@ class RegistrationPageTest extends TestCase
     {
         parent::setUp();
 
-        // Exercise registration validation and feature behavior independently of browser CSRF tokens.
-        $this->withoutMiddleware([
-            ValidateCsrfToken::class,
-            VerifyCsrfToken::class,
-        ]);
+        // Match PublicRegistrationPageTest: this suite validates registration
+        // behavior, not CSRF token generation or browser middleware behavior.
+        \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::except(['register']);
+    }
+
+    protected function tearDown(): void
+    {
+        \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::flushState();
+
+        parent::tearDown();
     }
 
     public function test_registration_page_is_public_and_linked_from_sign_in(): void
