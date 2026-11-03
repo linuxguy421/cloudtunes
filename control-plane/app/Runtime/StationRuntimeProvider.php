@@ -12,9 +12,12 @@ use App\Models\Station;
 interface StationRuntimeProvider
 {
     /**
-     * Reconcile one station to its persisted desired state.
+     * Persist one station reconciliation intent with the trusted controller.
      *
-     * @return array{accepted: bool, observed_state: string, message?: string|null}
+     * Acceptance is not a runtime health observation. The controller reports
+     * actual worker and Icecast state separately after reconciliation.
+     *
+     * @return array{accepted: bool, operation_id: string, runtime_generation: int, message?: string|null}
      */
     public function reconcile(Station $station, string $operationId): array;
 }
