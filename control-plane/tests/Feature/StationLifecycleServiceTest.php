@@ -44,6 +44,7 @@ class StationLifecycleServiceTest extends TestCase
         $this->assertTrue($result['changed']);
         $this->assertSame(Station::DESIRED_RUNNING, $result['station']->desired_state);
         $this->assertSame(Station::STATUS_PROVISIONING, $result['station']->status);
+        $this->assertSame(1, $result['station']->runtime_generation);
         $this->assertNotSame(Station::STATUS_LIVE, $result['station']->status);
 
         $this->assertDatabaseHas('station_lifecycle_events', [
@@ -80,6 +81,8 @@ class StationLifecycleServiceTest extends TestCase
         $this->assertTrue($first['changed']);
         $this->assertFalse($second['changed']);
         $this->assertSame($first['operation_id'], $second['operation_id']);
+        $this->assertSame(1, $first['station']->runtime_generation);
+        $this->assertSame(1, $second['station']->runtime_generation);
         $this->assertDatabaseCount('station_lifecycle_events', 1);
     }
 
@@ -107,6 +110,7 @@ class StationLifecycleServiceTest extends TestCase
 
         $this->assertSame(Station::DESIRED_STOPPED, $result['station']->desired_state);
         $this->assertSame(Station::STATUS_STOPPING, $result['station']->status);
+        $this->assertSame(1, $result['station']->runtime_generation);
         $this->assertSame(['playlist' => 'my-music'], $result['station']->configuration);
     }
 
@@ -125,6 +129,25 @@ class StationLifecycleServiceTest extends TestCase
         $this->assertFalse($second['changed']);
         $this->assertSame($first['operation_id'], $second['operation_id']);
         $this->assertDatabaseCount('station_lifecycle_events', 1);
+    }
+
+    public function test_each_new_lifecycle_intent_increments_runtime_generation(): void
+    {
+        $station = $this->station();
+        $service = app(StationLifecycleService::class);
+
+        $start = $service->requestStart($station, $station->owner);
+        $stop = $service->requestStop($start['station'], $station->owner);
+        $startAgain = $service->requestStart($stop['station'], $station->owner);
+
+        $this->assertSame(1, $start['station']->runtime_generation);
+        $this->assertSame(2, $stop['station']->runtime_generation);
+        $this->assertSame(3, $startAgain['station']->runtime_generation);
+        $this->assertDatabaseHas('station_lifecycle_events', [
+            'station_id' => $station->id,
+            'operation_id' => $startAgain['operation_id'],
+            'event_type' => 'start_requested',
+        ]);
     }
 
     public function test_runtime_cannot_report_live_after_stop_was_requested(): void
