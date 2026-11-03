@@ -31,6 +31,6 @@ if [ ! -s "$PLAYLIST_FILE" ]; then
 fi
 
 python3 /usr/local/bin/render_config.py
-chown -R ices:ices "$MEDIA_DIR" "$PLAYLIST_DIR" "$LOG_DIR"
+chown ices:ices "$LOG_DIR"
 
 exec su -s /bin/sh ices -c 'exec /usr/bin/ices2 /run/ices.xml'
