@@ -11,7 +11,7 @@ use Tests\TestCase;
 
 class HttpStationRuntimeProviderTest extends TestCase
 {
-    public function test_reconcile_sends_only_allowlisted_station_fields_with_hmac_signature(): void
+    public function test_reconcile_sends_allowlisted_fields_and_verifies_hmac_acknowledgement(): void
     {
         config([
             'cloudtunes.runtime.controller_url' => 'http://runtime-controller:8090',
@@ -19,12 +19,14 @@ class HttpStationRuntimeProviderTest extends TestCase
             'cloudtunes.runtime.timeout' => 20,
         ]);
 
+        $operationId = (string) Str::uuid();
         Http::fake([
             'http://runtime-controller:8090/*' => Http::response([
                 'accepted' => true,
-                'observed_state' => Station::STATUS_LIVE,
-                'message' => 'Station connected.',
-            ], 200),
+                'operation_id' => $operationId,
+                'runtime_generation' => 7,
+                'message' => 'Intent durably recorded.',
+            ], 202),
         ]);
 
         $station = new Station([
@@ -37,11 +39,12 @@ class HttpStationRuntimeProviderTest extends TestCase
             'configuration' => ['private' => 'must-not-be-sent'],
         ]);
         $station->setAttribute($station->getKeyName(), 42);
-        $operationId = (string) Str::uuid();
 
         $result = (new HttpStationRuntimeProvider())->reconcile($station, $operationId);
 
-        $this->assertSame(Station::STATUS_LIVE, $result['observed_state']);
+        $this->assertTrue($result['accepted']);
+        $this->assertSame($operationId, $result['operation_id']);
+        $this->assertSame(7, $result['runtime_generation']);
 
         Http::assertSent(function (Request $request) use ($operationId): bool {
             $timestamp = $request->header('X-CloudTunes-Timestamp')[0] ?? '';
