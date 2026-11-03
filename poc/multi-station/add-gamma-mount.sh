@@ -70,10 +70,10 @@ for entry in Path("/proc").iterdir():
     if not entry.name.isdigit():
         continue
     try:
-        argv = (entry / "cmdline").read_bytes().split(b"\\0")
+        argv = (entry / "cmdline").read_bytes().split(b"\0")
     except (OSError, PermissionError):
         continue
-    if argv and argv[0].rstrip(b"\\0").endswith(b"/icecast2"):
+    if argv and argv[0].rstrip(b"\0").endswith(b"/icecast2"):
         matches.append(int(entry.name))
 
 if len(matches) != 1:
