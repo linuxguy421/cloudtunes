@@ -58,6 +58,67 @@ Bravo should remain healthy and continue streaming. Restart Alpha with:
 docker compose -f poc/multi-station/compose.yaml start station-alpha
 ```
 
+## Dynamic mount reload test (Icecast 2.4.x)
+
+The optional Gamma worker tests whether a new mount-specific source account can
+be added to the running disposable Icecast process without restarting Alpha or
+Bravo. Gamma is in the `dynamic-test` Compose profile, so the normal POC startup
+does not start it.
+
+For an already-running POC, first pull the feature-branch changes. Create the
+Gamma credential locally if it does not exist:
+
+```bash
+if [ ! -s poc/multi-station/secrets/gamma_source_password ]; then
+  (umask 077; od -An -N32 -tx1 /dev/urandom | tr -d ' \\n' > poc/multi-station/secrets/gamma_source_password)
+fi
+chmod 600 poc/multi-station/secrets/gamma_source_password
+```
+
+Capture the current Icecast container start time and Alpha/Bravo stream start
+timestamps from `http://127.0.0.1:18401/status-json.xsl` (adjust the port if
+you started the POC on a different one). Then add Gamma's mount to the running
+POC server and signal the Icecast process to reread its configuration:
+
+```bash
+sh ./poc/multi-station/add-gamma-mount.sh
+```
+
+The helper copies the Gamma secret into the disposable Icecast container,
+backs up its generated config in `/run`, adds only the Gamma mount entry,
+atomically replaces the config, and sends `SIGHUP` to the Icecast process. It
+does not recreate or restart the Icecast container. It does not touch the
+primary CloudTunes Icecast service.
+
+Build and start only the opt-in Gamma worker:
+
+```bash
+docker compose -f poc/multi-station/compose.yaml build station-gamma
+docker compose --profile dynamic-test -f poc/multi-station/compose.yaml up -d station-gamma
+docker compose -f poc/multi-station/compose.yaml ps
+docker compose -f poc/multi-station/compose.yaml logs --tail=50 station-gamma icecast
+```
+
+Success criteria:
+
+- Gamma becomes healthy and `/station-gamma.ogg` appears in Icecast status JSON.
+- Alpha and Bravo remain active throughout the reload.
+- Their `stream_start_iso8601` values do not change.
+- The Icecast container's `StartedAt` value does not change.
+- Gamma authenticates with its own `gamma-source` credential.
+
+If Icecast logs a configuration reload error, do not start Gamma. Preserve the
+logs and stop here; the existing Alpha/Bravo streams should remain on the
+pre-reload in-memory configuration. This test is specifically intended to
+establish the exact Icecast 2.4.x behavior before implementing Laravel
+provisioning.
+
+To stop only Gamma after the test:
+
+```bash
+docker compose --profile dynamic-test -f poc/multi-station/compose.yaml stop station-gamma
+```
+
 ## Stop and cleanup
 
 ```bash
