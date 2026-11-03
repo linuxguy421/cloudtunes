@@ -32,6 +32,7 @@ class HttpStationRuntimeProvider implements StationRuntimeProvider
                 'mount_path' => $station->mount_path,
                 'playback_mode' => $station->playback_mode,
                 'desired_state' => $station->desired_state,
+                'runtime_generation' => (int) $station->runtime_generation,
             ],
         ];
 
