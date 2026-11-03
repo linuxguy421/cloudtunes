@@ -11,10 +11,9 @@ class FakeStationRuntimeProvider implements StationRuntimeProvider
     {
         return [
             'accepted' => true,
-            'observed_state' => $station->desired_state === Station::DESIRED_RUNNING
-                ? Station::STATUS_LIVE
-                : Station::STATUS_STOPPED,
-            'message' => 'Fake runtime reconciliation completed.',
+            'operation_id' => $operationId,
+            'runtime_generation' => (int) $station->runtime_generation,
+            'message' => 'Fake runtime intent accepted.',
         ];
     }
 
