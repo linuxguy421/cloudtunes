@@ -4,7 +4,7 @@ set -eu
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 cd "$SCRIPT_DIR"
 
-mkdir -p secrets data/alpha data/bravo playlists/alpha playlists/bravo
+mkdir -p secrets data/alpha data/bravo data/gamma playlists/alpha playlists/bravo playlists/gamma
 
 make_secret() {
     file=$1
@@ -16,5 +16,6 @@ make_secret() {
 
 make_secret secrets/alpha_source_password
 make_secret secrets/bravo_source_password
+make_secret secrets/gamma_source_password
 
 docker compose -f compose.yaml up -d --build
