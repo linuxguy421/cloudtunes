@@ -54,8 +54,9 @@ def payload(
     }
 
 
-def post_intent(client: TestClient, data: dict):
-    path = f"/v1/stations/{data['station']['id']}/reconcile"
+def post_intent(client: TestClient, data: dict, path_station_id: str | None = None):
+    route_id = path_station_id or data["station"]["id"]
+    path = f"/v1/stations/{route_id}/reconcile"
     body = json.dumps(data, separators=(",", ":")).encode()
     return client.post(path, content=body, headers=signed_headers(path, body))
 
@@ -142,7 +143,7 @@ def test_station_id_must_match_signed_request_path(client):
     data = payload(station_id="12")
     data["station"]["id"] = "13"
 
-    assert post_intent(client, data).status_code == 422
+    assert post_intent(client, data, path_station_id="12").status_code == 422
 
 
 def test_extra_station_fields_are_rejected(client):
