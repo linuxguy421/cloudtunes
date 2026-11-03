@@ -1,0 +1,99 @@
+# Station runtime controller contract
+
+## Boundary
+
+Laravel is the control plane and PostgreSQL remains the source of truth for
+station identity and desired state. The Laravel queue worker sends a typed,
+authenticated reconciliation request to a separate trusted runtime controller.
+The public Laravel web container must not receive the Docker socket or arbitrary
+Docker API access.
+
+The controller is responsible for provisioning and reconciling Ices workers
+and their Icecast mounts. It must not accept shell commands, arbitrary image
+names, container IDs, host paths, mount names, or credentials from the caller.
+
+## Request
+
+`POST /v1/stations/{station_id}/reconcile`
+
+Headers:
+
+- `X-CloudTunes-Timestamp`: Unix timestamp in seconds.
+- `X-CloudTunes-Signature`: lowercase hexadecimal HMAC-SHA256.
+
+The signature is computed over the UTF-8 bytes of:
+
+```text
+{timestamp}
+POST
+/v1/stations/{station_id}/reconcile
+{lowercase-hex SHA256 of the exact request body}
+```
+
+The HMAC key is `CLOUDTUNES_RUNTIME_SHARED_SECRET`. The controller must
+reject timestamps outside a short clock-skew window (recommended: 60 seconds),
+compare signatures in constant time, and rate-limit invalid requests. The
+shared secret belongs only to the queue worker and runtime controller; it must
+not be injected into the public web container.
+
+Request JSON contains an operation UUID and a station descriptor with only:
+`id`, `name`, `slug`, `mount_path`, `playback_mode`, and
+`desired_state`. It contains no source password, media path, Docker resource
+identifier, or executable command. The controller must validate every field
+and derive all paths, container names, image names, credentials, and mount
+configuration from trusted local policy.
+
+## Response
+
+Successful reconciliation returns JSON:
+
+```json
+{
+  "accepted": true,
+  "observed_state": "live",
+  "message": "Station source connected and mount is visible."
+}
+```
+
+`observed_state` must be one of the states accepted by
+`Station::OBSERVED_STATES`. The controller must return `live` only after
+verifying both the Ices worker and its expected Icecast source mount. A stop
+request returns `stopped` only after the worker is stopped and the mount is
+no longer active. Transient controller failures should return a non-2xx
+response so Laravel's queue retries the operation.
+
+## Idempotency and ordering
+
+The operation UUID is the idempotency key. The controller must persist the
+latest accepted operation UUID per station and reject stale operations. Repeated
+delivery of the same operation must converge on the same desired state without
+creating duplicate workers, credentials, or mounts.
+
+Laravel also checks the latest persisted lifecycle intent before dispatching
+runtime work and rejects stale observations when recording the result. The
+controller's check is still required because queue delivery and HTTP requests
+can race with newer operations.
+
+## Runtime isolation requirements
+
+- One foreground Ices process/container per station.
+- One station-specific source account and unique Icecast mount per station.
+- A worker receives only its own source credential and station media/playlist
+  storage.
+- The Icecast config is rendered from trusted templates, validated, replaced
+  atomically, and reloaded with `SIGHUP`; never use the Icecast 2.5-only
+  `/admin/reloadconfig` endpoint on the current 2.4.x service.
+- Do not recursively change ownership of user media directories.
+- Do not restart the shared Icecast process for ordinary station create/start/
+  stop operations.
+- Do not mount an unrestricted Docker socket into the public Laravel web
+  container. The controller's Docker API permissions must be constrained to
+  the minimum required operations.
+
+## Current implementation status
+
+The Laravel-side HMAC client, typed provider interface, and queued
+reconciliation job implement the request/response contract. The runtime
+controller service and its constrained Docker API integration are the next
+implementation slice. Until that service is deployed and configured, runtime
+reconciliation is not operational.

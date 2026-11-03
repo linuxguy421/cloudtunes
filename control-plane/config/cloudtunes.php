@@ -10,6 +10,14 @@ return [
     'icecast_public_url' => env('ICECAST_PUBLIC_URL', 'http://localhost:8000'),
     'icecast_mount' => env('ICECAST_MOUNT', '/default0.ogg'),
 
+    // Runtime operations are sent by the queue worker to a separate trusted controller.
+    'runtime' => [
+        'driver' => env('CLOUDTUNES_RUNTIME_DRIVER', 'http'),
+        'controller_url' => env('CLOUDTUNES_RUNTIME_CONTROLLER_URL', 'http://runtime-controller:8090'),
+        'shared_secret' => env('CLOUDTUNES_RUNTIME_SHARED_SECRET', ''),
+        'timeout' => (int) env('CLOUDTUNES_RUNTIME_TIMEOUT', 20),
+    ],
+
     // Optional Last.fm API key for track artwork. The player works without it.
     'lastfm_api_key' => env('LASTFM_API_KEY'),
 ];
