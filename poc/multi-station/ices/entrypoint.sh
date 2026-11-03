@@ -14,23 +14,25 @@ LOG_DIR=/var/log/ices
 
 mkdir -p "$MEDIA_DIR" "$PLAYLIST_DIR" "$LOG_DIR"
 
-# Remove only the POC-generated test assets so an earlier mono test tone
-# cannot be mistaken for user-supplied media on a subsequent container start.
-rm -f "$MEDIA_DIR/poc-test-tone-1.ogg" "$MEDIA_DIR/poc-test-tone-2.ogg" "$MEDIA_DIR/poc-test-tone.ogg"
-
-# Generate two distinct stereo test tracks only when no Ogg Vorbis media was supplied.
-# Ices' playlist module rejects replaying a single-item playlist consecutively.
-if ! find "$MEDIA_DIR" -maxdepth 1 -type f -iname '*.ogg' -print -quit | grep -q .; then
+# Generate two distinct stereo test tracks only when no user-supplied Ogg
+# media exists. Keep the legacy test-tone file untouched, but exclude it from
+# the generated test playlist; it may be a mono artifact from an earlier run.
+if ! find "$MEDIA_DIR" -maxdepth 1 -type f -iname '*.ogg' \
+    ! -name 'poc-test-tone.ogg' \
+    ! -name 'poc-test-tone-1.ogg' \
+    ! -name 'poc-test-tone-2.ogg' -print -quit | grep -q .; then
     ffmpeg -hide_banner -loglevel error \
         -f lavfi -i "sine=frequency=$TEST_TONE_HZ:sample_rate=44100:duration=30" \
         -ac 2 -c:a libvorbis -q:a 3 -y "$MEDIA_DIR/poc-test-tone-1.ogg"
     ffmpeg -hide_banner -loglevel error \
         -f lavfi -i "sine=frequency=$((TEST_TONE_HZ + 110)):sample_rate=44100:duration=30" \
         -ac 2 -c:a libvorbis -q:a 3 -y "$MEDIA_DIR/poc-test-tone-2.ogg"
-fi
-
-if [ ! -s "$PLAYLIST_FILE" ]; then
-    find "$MEDIA_DIR" -maxdepth 1 -type f -iname '*.ogg' -print | sort > "$PLAYLIST_FILE"
+    printf '%s\\n' "$MEDIA_DIR/poc-test-tone-1.ogg" "$MEDIA_DIR/poc-test-tone-2.ogg" > "$PLAYLIST_FILE"
+elif [ ! -s "$PLAYLIST_FILE" ]; then
+    find "$MEDIA_DIR" -maxdepth 1 -type f -iname '*.ogg' \
+        ! -name 'poc-test-tone.ogg' \
+        ! -name 'poc-test-tone-1.ogg' \
+        ! -name 'poc-test-tone-2.ogg' -print | sort > "$PLAYLIST_FILE"
 fi
 
 if [ ! -s "$PLAYLIST_FILE" ]; then
