@@ -33,6 +33,7 @@ class HttpStationRuntimeProviderTest extends TestCase
             'mount_path' => '/night-drive.ogg',
             'playback_mode' => 'random',
             'desired_state' => Station::DESIRED_RUNNING,
+            'runtime_generation' => 7,
             'configuration' => ['private' => 'must-not-be-sent'],
         ]);
         $station->setAttribute($station->getKeyName(), 42);
@@ -61,6 +62,7 @@ class HttpStationRuntimeProviderTest extends TestCase
                 )
                 && data_get($request->data(), 'operation_id') === $operationId
                 && data_get($request->data(), 'station.desired_state') === Station::DESIRED_RUNNING
+                && data_get($request->data(), 'station.runtime_generation') === 7
                 && ! array_key_exists('configuration', $request->data()['station'] ?? []);
         });
     }
