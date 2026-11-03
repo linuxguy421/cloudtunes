@@ -151,3 +151,17 @@ def test_extra_station_fields_are_rejected(client):
     data["station"]["source_password"] = "must-not-be-accepted"
 
     assert post_intent(client, data).status_code == 422
+
+
+
+def test_invalid_authentication_is_rate_limited_per_source(client):
+    data = payload()
+    path = f"/v1/stations/{data['station']['id']}/reconcile"
+    body = json.dumps(data, separators=(",", ":")).encode()
+    headers = signed_headers(path, body)
+    headers["X-CloudTunes-Signature"] = "0" * 64
+
+    for _ in range(10):
+        assert client.post(path, content=body, headers=headers).status_code == 401
+
+    assert client.post(path, content=body, headers=headers).status_code == 429
