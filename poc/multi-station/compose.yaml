@@ -46,6 +46,36 @@ services:
       retries: 12
       start_period: 20s
 
+  station-gamma:
+    profiles: ["dynamic-test"]
+    build:
+      context: ./ices
+    restart: unless-stopped
+    depends_on:
+      icecast:
+        condition: service_healthy
+    environment:
+      ICECAST_HOST: icecast
+      ICECAST_PORT: "8000"
+      ICECAST_STATUS_URL: http://icecast:8000/status-json.xsl
+      STATION_NAME: Gamma Test Station
+      STATION_DESCRIPTION: CloudTunes dynamic mount provisioning test
+      STATION_MOUNT: /station-gamma.ogg
+      SOURCE_USERNAME: gamma-source
+      SOURCE_PASSWORD_FILE: /run/secrets/gamma_source_password
+      TEST_TONE_HZ: "880"
+    secrets:
+      - gamma_source_password
+    volumes:
+      - ./data/gamma:/media
+      - ./playlists/gamma:/playlist
+    healthcheck:
+      test: ["CMD", "python3", "/usr/local/bin/check_mount.py"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 20s
+
   station-bravo:
     build:
       context: ./ices
@@ -80,3 +110,5 @@ secrets:
     file: ./secrets/alpha_source_password
   bravo_source_password:
     file: ./secrets/bravo_source_password
+  gamma_source_password:
+    file: ./secrets/gamma_source_password
