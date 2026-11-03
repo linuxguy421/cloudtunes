@@ -49,14 +49,14 @@ configuration from trusted local policy.
 
 The controller acknowledges durable intent acceptance with HTTP 202:
 
-\`\`\`json
+```json
 {
   "accepted": true,
   "operation_id": "f4d58b80-2e0a-4d0e-98c1-91ecf3cdbf34",
   "runtime_generation": 7,
   "message": "Runtime intent durably recorded."
 }
-\`\`\`
+```
 
 This acknowledgement is not a health observation. Laravel must leave the
 station in its transitional state (provisioning or stopping) until a
