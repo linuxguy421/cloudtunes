@@ -238,14 +238,16 @@ def create_app(
 ) -> FastAPI:
     db_path = database_path or os.getenv("RUNTIME_CONTROLLER_DB", "/data/runtime-controller.sqlite3")
     secret = shared_secret if shared_secret is not None else os.getenv("CLOUDTUNES_RUNTIME_SHARED_SECRET", "")
-    initialize_database(db_path)
-
     application = FastAPI(
         title="CloudTunes Runtime Controller",
         docs_url=None,
         redoc_url=None,
         openapi_url=None,
     )
+
+    @application.on_event("startup")
+    def startup() -> None:
+        initialize_database(db_path)
 
     @application.get("/healthz")
     def health() -> dict[str, str]:
