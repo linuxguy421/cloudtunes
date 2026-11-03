@@ -72,31 +72,31 @@ def initialize_database(database_path: str) -> None:
     previous_umask = os.umask(0o077)
     try:
         with closing(sqlite3.connect(path)) as connection:
-        connection.execute("PRAGMA journal_mode=WAL")
-        connection.executescript(
-            """
-            CREATE TABLE IF NOT EXISTS station_runtime_intents (
-                station_id TEXT PRIMARY KEY,
-                runtime_generation INTEGER NOT NULL,
-                operation_id TEXT NOT NULL,
-                desired_state TEXT NOT NULL,
-                descriptor_json TEXT NOT NULL,
-                request_sha256 TEXT NOT NULL,
-                accepted_at TEXT NOT NULL
-            );
+            connection.execute("PRAGMA journal_mode=WAL")
+            connection.executescript(
+                """
+                CREATE TABLE IF NOT EXISTS station_runtime_intents (
+                    station_id TEXT PRIMARY KEY,
+                    runtime_generation INTEGER NOT NULL,
+                    operation_id TEXT NOT NULL,
+                    desired_state TEXT NOT NULL,
+                    descriptor_json TEXT NOT NULL,
+                    request_sha256 TEXT NOT NULL,
+                    accepted_at TEXT NOT NULL
+                );
 
-            CREATE TABLE IF NOT EXISTS station_runtime_operations (
-                station_id TEXT NOT NULL,
-                runtime_generation INTEGER NOT NULL,
-                operation_id TEXT NOT NULL UNIQUE,
-                desired_state TEXT NOT NULL,
-                descriptor_json TEXT NOT NULL,
-                request_sha256 TEXT NOT NULL,
-                accepted_at TEXT NOT NULL,
-                PRIMARY KEY (station_id, runtime_generation)
-            );
-            """
-        )
+                CREATE TABLE IF NOT EXISTS station_runtime_operations (
+                    station_id TEXT NOT NULL,
+                    runtime_generation INTEGER NOT NULL,
+                    operation_id TEXT NOT NULL UNIQUE,
+                    desired_state TEXT NOT NULL,
+                    descriptor_json TEXT NOT NULL,
+                    request_sha256 TEXT NOT NULL,
+                    accepted_at TEXT NOT NULL,
+                    PRIMARY KEY (station_id, runtime_generation)
+                );
+                """
+            )
             connection.commit()
     finally:
         os.umask(previous_umask)
