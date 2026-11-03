@@ -47,22 +47,26 @@ configuration from trusted local policy.
 
 ## Response
 
-Successful reconciliation returns JSON:
+The controller acknowledges durable intent acceptance with HTTP 202:
 
-```json
+\`\`\`json
 {
   "accepted": true,
-  "observed_state": "live",
-  "message": "Station source connected and mount is visible."
+  "operation_id": "f4d58b80-2e0a-4d0e-98c1-91ecf3cdbf34",
+  "runtime_generation": 7,
+  "message": "Runtime intent durably recorded."
 }
-```
+\`\`\`
 
-`observed_state` must be one of the states accepted by
-`Station::OBSERVED_STATES`. The controller must return `live` only after
-verifying both the Ices worker and its expected Icecast source mount. A stop
-request returns `stopped` only after the worker is stopped and the mount is
-no longer active. Transient controller failures should return a non-2xx
-response so Laravel's queue retries the operation.
+This acknowledgement is not a health observation. Laravel must leave the
+station in its transitional state (provisioning or stopping) until a
+separate trusted runtime observation confirms the worker and Icecast mount.
+The controller must never report live merely because it accepted a request.
+
+The future observation callback must be authenticated independently, include
+the operation UUID and runtime generation, and be rejected by Laravel if either
+does not match the latest persisted lifecycle intent. Actual health states are
+limited to the values in Station::OBSERVED_STATES.
 
 ## Idempotency and ordering
 
@@ -105,7 +109,9 @@ mandatory because queue delivery and HTTP requests can race with newer intents.
 
 The Laravel-side HMAC client, typed provider interface, queued
 reconciliation job, and monotonic station runtime generation are implemented.
-The controller service must enforce generation ordering in durable storage
-before any Docker side effect. Its constrained Docker integration and actual
-worker reconciliation remain the next implementation slice. Until that
-service is deployed and configured, runtime reconciliation is not operational.
+The private runtime-controller API now verifies HMAC timestamps/signatures,
+validates the strict station allowlist, and persists operation generations in
+a SQLite ledger. It has no Docker socket and does not yet create or stop Ices
+workers, update Icecast mounts, or report runtime health. Those are the next
+implementation slice; until then the service durably accepts intent but does
+not perform playback reconciliation.
