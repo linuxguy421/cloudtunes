@@ -1,4 +1,4 @@
-FROM python:3.12-slim
+FROM python:3.12-slim AS base
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -6,14 +6,27 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt \
-    && useradd --system --uid 10001 --create-home --shell /usr/sbin/nologin runtime \
+RUN useradd --system --uid 10001 --create-home --shell /usr/sbin/nologin runtime \
     && mkdir -p /data \
     && chown runtime:runtime /data
+
+FROM base AS runtime
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
 COPY app.py .
 USER runtime
 
 EXPOSE 8090
 CMD ["uvicorn", "app:app", "--host=0.0.0.0", "--port=8090", "--workers=1"]
+
+FROM base AS test
+
+COPY requirements-dev.txt .
+RUN pip install --no-cache-dir -r requirements-dev.txt
+
+COPY app.py .
+COPY tests ./tests
+
+CMD ["pytest", "-q", "tests"]
