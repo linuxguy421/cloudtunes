@@ -1,0 +1,82 @@
+name: cloudtunes-multistation-poc
+
+services:
+  icecast:
+    build:
+      context: ./icecast
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${POC_ICECAST_PORT:-18400}:8000"
+    secrets:
+      - alpha_source_password
+      - bravo_source_password
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8000/status-json.xsl >/dev/null"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
+
+  station-alpha:
+    build:
+      context: ./ices
+    restart: unless-stopped
+    depends_on:
+      icecast:
+        condition: service_healthy
+    environment:
+      ICECAST_HOST: icecast
+      ICECAST_PORT: "8000"
+      ICECAST_STATUS_URL: http://icecast:8000/status-json.xsl
+      STATION_NAME: Alpha Test Station
+      STATION_DESCRIPTION: CloudTunes isolated multi-station proof of concept
+      STATION_MOUNT: /station-alpha.ogg
+      SOURCE_USERNAME: alpha-source
+      SOURCE_PASSWORD_FILE: /run/secrets/alpha_source_password
+      TEST_TONE_HZ: "440"
+    secrets:
+      - alpha_source_password
+    volumes:
+      - ./data/alpha:/media
+      - ./playlists/alpha:/playlist
+    healthcheck:
+      test: ["CMD", "python3", "/usr/local/bin/check_mount.py"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 20s
+
+  station-bravo:
+    build:
+      context: ./ices
+    restart: unless-stopped
+    depends_on:
+      icecast:
+        condition: service_healthy
+    environment:
+      ICECAST_HOST: icecast
+      ICECAST_PORT: "8000"
+      ICECAST_STATUS_URL: http://icecast:8000/status-json.xsl
+      STATION_NAME: Bravo Test Station
+      STATION_DESCRIPTION: CloudTunes isolated multi-station proof of concept
+      STATION_MOUNT: /station-bravo.ogg
+      SOURCE_USERNAME: bravo-source
+      SOURCE_PASSWORD_FILE: /run/secrets/bravo_source_password
+      TEST_TONE_HZ: "660"
+    secrets:
+      - bravo_source_password
+    volumes:
+      - ./data/bravo:/media
+      - ./playlists/bravo:/playlist
+    healthcheck:
+      test: ["CMD", "python3", "/usr/local/bin/check_mount.py"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 20s
+
+secrets:
+  alpha_source_password:
+    file: ./secrets/alpha_source_password
+  bravo_source_password:
+    file: ./secrets/bravo_source_password
