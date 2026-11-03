@@ -20,7 +20,7 @@ class HttpStationRuntimeProviderTest extends TestCase
         ]);
 
         Http::fake([
-            'runtime-controller:8090/*' => Http::response([
+            'http://runtime-controller:8090/*' => Http::response([
                 'accepted' => true,
                 'observed_state' => Station::STATUS_LIVE,
                 'message' => 'Station connected.',
