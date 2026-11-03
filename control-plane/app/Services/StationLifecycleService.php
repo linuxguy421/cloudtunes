@@ -42,10 +42,12 @@ class StationLifecycleService
 
             $operationId = (string) Str::uuid();
             $fromState = $locked->status;
+            $nextGeneration = ((int) $locked->runtime_generation) + 1;
 
             $locked->forceFill([
                 'desired_state' => Station::DESIRED_RUNNING,
                 'status' => Station::STATUS_PROVISIONING,
+                'runtime_generation' => $nextGeneration,
                 'last_error' => null,
             ])->save();
 
@@ -55,7 +57,7 @@ class StationLifecycleService
                 'event_type' => 'start_requested',
                 'from_state' => $fromState,
                 'to_state' => Station::STATUS_PROVISIONING,
-                'result' => ['accepted' => true],
+                'result' => ['accepted' => true, 'runtime_generation' => $nextGeneration],
                 'message' => 'Station start requested; runtime reconciliation is pending.',
             ]);
 
@@ -94,10 +96,12 @@ class StationLifecycleService
             $targetObservedState = $fromState === Station::STATUS_DRAFT
                 ? Station::STATUS_DRAFT
                 : Station::STATUS_STOPPING;
+            $nextGeneration = ((int) $locked->runtime_generation) + 1;
 
             $locked->forceFill([
                 'desired_state' => Station::DESIRED_STOPPED,
                 'status' => $targetObservedState,
+                'runtime_generation' => $nextGeneration,
             ])->save();
 
             $locked->lifecycleEvents()->create([
@@ -106,7 +110,7 @@ class StationLifecycleService
                 'event_type' => 'stop_requested',
                 'from_state' => $fromState,
                 'to_state' => $targetObservedState,
-                'result' => ['accepted' => true],
+                'result' => ['accepted' => true, 'runtime_generation' => $nextGeneration],
                 'message' => 'Station stop requested; runtime reconciliation is pending.',
             ]);
 
@@ -179,7 +183,7 @@ class StationLifecycleService
                 'event_type' => 'runtime_state_changed',
                 'from_state' => $fromState,
                 'to_state' => $observedState,
-                'result' => ['desired_state' => $locked->desired_state],
+                'result' => ['desired_state' => $locked->desired_state, 'runtime_generation' => $locked->runtime_generation],
                 'message' => $message,
             ]);
 
