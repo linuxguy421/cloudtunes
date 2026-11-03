@@ -128,6 +128,8 @@ class StationLifecycleServiceTest extends TestCase
         $this->assertTrue($first['changed']);
         $this->assertFalse($second['changed']);
         $this->assertSame($first['operation_id'], $second['operation_id']);
+        $this->assertSame(1, $first['station']->runtime_generation);
+        $this->assertSame(1, $second['station']->runtime_generation);
         $this->assertDatabaseCount('station_lifecycle_events', 1);
     }
 
