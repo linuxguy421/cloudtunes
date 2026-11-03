@@ -27,7 +27,7 @@ if ! find "$MEDIA_DIR" -maxdepth 1 -type f -iname '*.ogg' \
     ffmpeg -hide_banner -loglevel error \
         -f lavfi -i "sine=frequency=$((TEST_TONE_HZ + 110)):sample_rate=44100:duration=30" \
         -ac 2 -c:a libvorbis -q:a 3 -y "$MEDIA_DIR/poc-test-tone-2.ogg"
-    printf '%s\\n' "$MEDIA_DIR/poc-test-tone-1.ogg" "$MEDIA_DIR/poc-test-tone-2.ogg" > "$PLAYLIST_FILE"
+    printf '%s\n' "$MEDIA_DIR/poc-test-tone-1.ogg" "$MEDIA_DIR/poc-test-tone-2.ogg" > "$PLAYLIST_FILE"
 elif [ ! -s "$PLAYLIST_FILE" ]; then
     find "$MEDIA_DIR" -maxdepth 1 -type f -iname '*.ogg' \
         ! -name 'poc-test-tone.ogg' \
