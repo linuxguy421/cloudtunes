@@ -37,8 +37,10 @@ shared secret belongs only to the queue worker and runtime controller; it must
 not be injected into the public web container.
 
 Request JSON contains an operation UUID and a station descriptor with only:
-`id`, `name`, `slug`, `mount_path`, `playback_mode`, and
-`desired_state`. It contains no source password, media path, Docker resource
+`id`, `name`, `slug`, `mount_path`, `playback_mode`, `desired_state`, and
+`runtime_generation`. The generation is a monotonically increasing integer
+stored on the station row. Laravel increments it transactionally whenever a
+new start or stop intent is accepted; an idempotent repeat does not increment it. It contains no source password, media path, Docker resource
 identifier, or executable command. The controller must validate every field
 and derive all paths, container names, image names, credentials, and mount
 configuration from trusted local policy.
@@ -64,15 +66,24 @@ response so Laravel's queue retries the operation.
 
 ## Idempotency and ordering
 
-The operation UUID is the idempotency key. The controller must persist the
-latest accepted operation UUID per station and reject stale operations. Repeated
-delivery of the same operation must converge on the same desired state without
-creating duplicate workers, credentials, or mounts.
+The operation UUID is the idempotency key, while `runtime_generation` is the
+ordering token. The controller must persist both with the latest accepted
+station intent and enforce these rules atomically:
 
-Laravel also checks the latest persisted lifecycle intent before dispatching
-runtime work and rejects stale observations when recording the result. The
-controller's check is still required because queue delivery and HTTP requests
-can race with newer operations.
+- A request with a generation lower than the stored generation is stale and
+  must be rejected without changing runtime state.
+- A request with the same generation and same operation UUID is a retry and
+  must return the original operation result without duplicating side effects.
+- A request with the same generation but a different operation UUID is a
+  conflict and must be rejected.
+- A request with a greater generation supersedes the prior intent, even when
+  intermediate generations were never delivered to the controller.
+
+The generation check closes a race that UUID comparison alone cannot: an older
+start request may arrive after a newer stop request. Laravel also checks the
+latest persisted lifecycle intent before dispatching runtime work and rejects
+stale observations when recording the result. The controller's check remains
+mandatory because queue delivery and HTTP requests can race with newer intents.
 
 ## Runtime isolation requirements
 
@@ -92,8 +103,9 @@ can race with newer operations.
 
 ## Current implementation status
 
-The Laravel-side HMAC client, typed provider interface, and queued
-reconciliation job implement the request/response contract. The runtime
-controller service and its constrained Docker API integration are the next
-implementation slice. Until that service is deployed and configured, runtime
-reconciliation is not operational.
+The Laravel-side HMAC client, typed provider interface, queued
+reconciliation job, and monotonic station runtime generation are implemented.
+The controller service must enforce generation ordering in durable storage
+before any Docker side effect. Its constrained Docker integration and actual
+worker reconciliation remain the next implementation slice. Until that
+service is deployed and configured, runtime reconciliation is not operational.
