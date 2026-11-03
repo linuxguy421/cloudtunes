@@ -4,7 +4,7 @@ services:
       context: ./docker-icecast
     restart: unless-stopped
     ports:
-      - "\${ICECAST_PORT:-8000}:8000"
+      - "${ICECAST_PORT:-8000}:8000"
     secrets:
       - icecast_source_password
       - icecast_relay_password
@@ -42,7 +42,7 @@ services:
     environment:
       POSTGRES_DB: cloudtunes_control_plane
       POSTGRES_USER: cloudtunes
-      POSTGRES_PASSWORD: \${CONTROL_PLANE_DB_PASSWORD:?Set CONTROL_PLANE_DB_PASSWORD in .env}
+      POSTGRES_PASSWORD: ${CONTROL_PLANE_DB_PASSWORD:?Set CONTROL_PLANE_DB_PASSWORD in .env}
     volumes:
       - control-plane-db-data:/var/lib/postgresql/data
     networks:
@@ -61,13 +61,13 @@ services:
       APP_NAME: CloudTunes
       APP_ENV: production
       APP_DEBUG: "false"
-      APP_KEY: \${CONTROL_PLANE_APP_KEY:?Set CONTROL_PLANE_APP_KEY in .env}
-      APP_URL: \${APP_URL:-http://localhost:8080}
-      CLOUDTUNES_PUBLIC_REGISTRATION_ENABLED: \${CLOUDTUNES_PUBLIC_REGISTRATION_ENABLED:-true}
+      APP_KEY: ${CONTROL_PLANE_APP_KEY:?Set CONTROL_PLANE_APP_KEY in .env}
+      APP_URL: ${APP_URL:-http://localhost:8080}
+      CLOUDTUNES_PUBLIC_REGISTRATION_ENABLED: ${CLOUDTUNES_PUBLIC_REGISTRATION_ENABLED:-true}
       ICECAST_STATUS_URL: http://icecast:8000/status-json.xsl
-      ICECAST_PUBLIC_URL: \${ICECAST_PUBLIC_URL:-http://localhost:8000}
-      ICECAST_MOUNT: \${ICECAST_MOUNT:-/default0.ogg}
-      LASTFM_API_KEY: \${LASTFM_API_KEY:-}
+      ICECAST_PUBLIC_URL: ${ICECAST_PUBLIC_URL:-http://localhost:8000}
+      ICECAST_MOUNT: ${ICECAST_MOUNT:-/default0.ogg}
+      LASTFM_API_KEY: ${LASTFM_API_KEY:-}
       LOG_CHANNEL: stderr
       LOG_LEVEL: info
       DB_CONNECTION: pgsql
@@ -75,10 +75,10 @@ services:
       DB_PORT: "5432"
       DB_DATABASE: cloudtunes_control_plane
       DB_USERNAME: cloudtunes
-      DB_PASSWORD: \${CONTROL_PLANE_DB_PASSWORD:?Set CONTROL_PLANE_DB_PASSWORD in .env}
+      DB_PASSWORD: ${CONTROL_PLANE_DB_PASSWORD:?Set CONTROL_PLANE_DB_PASSWORD in .env}
       QUEUE_CONNECTION: database
       SESSION_DRIVER: database
-      SESSION_SECURE_COOKIE: \${SESSION_SECURE_COOKIE:-false}
+      SESSION_SECURE_COOKIE: ${SESSION_SECURE_COOKIE:-false}
       CACHE_STORE: database
     command: ["php", "artisan", "migrate", "--force"]
     depends_on:
@@ -94,7 +94,7 @@ services:
     environment: *control-plane-env
     command: ["php", "-S", "0.0.0.0:8080", "-t", "public", "public/index.php"]
     ports:
-      - "\${CONTROL_PLANE_PORT:-8080}:8080"
+      - "${CONTROL_PLANE_PORT:-8080}:8080"
     volumes:
       - control-plane-storage:/var/www/control-plane/storage
     depends_on:
@@ -108,7 +108,7 @@ services:
       context: ./runtime-controller
     restart: unless-stopped
     environment:
-      CLOUDTUNES_RUNTIME_SHARED_SECRET: \${CLOUDTUNES_RUNTIME_SHARED_SECRET:-}
+      CLOUDTUNES_RUNTIME_SHARED_SECRET: ${CLOUDTUNES_RUNTIME_SHARED_SECRET:-}
       RUNTIME_CONTROLLER_DB: /data/runtime-controller.sqlite3
     expose:
       - "8090"
@@ -129,7 +129,7 @@ services:
     environment:
       <<: *control-plane-env
       CLOUDTUNES_RUNTIME_CONTROLLER_URL: http://runtime-controller:8090
-      CLOUDTUNES_RUNTIME_SHARED_SECRET: \${CLOUDTUNES_RUNTIME_SHARED_SECRET:-}
+      CLOUDTUNES_RUNTIME_SHARED_SECRET: ${CLOUDTUNES_RUNTIME_SHARED_SECRET:-}
     command: ["php", "artisan", "queue:work", "--sleep=1", "--tries=3", "--timeout=90"]
     volumes:
       - control-plane-storage:/var/www/control-plane/storage
