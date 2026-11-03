@@ -2,6 +2,7 @@
 """Render one foreground Ices configuration from station environment and secret."""
 
 import os
+import pwd
 import re
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -69,4 +70,6 @@ for tag, value in (
 ET.indent(root, space="    ")
 output = Path("/run/ices.xml")
 ET.ElementTree(root).write(output, encoding="utf-8", xml_declaration=True)
+ices_user = pwd.getpwnam("ices")
+os.chown(output, ices_user.pw_uid, ices_user.pw_gid)
 os.chmod(output, 0o600)
