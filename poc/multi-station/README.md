@@ -19,7 +19,7 @@ From the repository root:
 sh ./poc/multi-station/up.sh
 ```
 
-The script creates two random local source secrets if they do not already exist,
+The script creates three random local source secrets if they do not already exist,
 then builds and starts the POC. Secrets are ignored by Git and have mode 0600.
 
 If a station's media directory is empty, its worker generates a short Ogg Vorbis
