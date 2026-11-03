@@ -57,6 +57,7 @@ class Station extends Model
         'slug',
         'status',
         'desired_state',
+        'runtime_generation',
         'playback_mode',
         'mount_path',
         'configuration',
@@ -68,6 +69,7 @@ class Station extends Model
     {
         return [
             'configuration' => 'array',
+            'runtime_generation' => 'integer',
             'last_health_check_at' => 'datetime',
             'deleted_at' => 'datetime',
         ];
