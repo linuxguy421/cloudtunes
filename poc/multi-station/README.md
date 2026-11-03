@@ -70,7 +70,7 @@ Gamma credential locally if it does not exist:
 
 ```bash
 if [ ! -s poc/multi-station/secrets/gamma_source_password ]; then
-  (umask 077; od -An -N32 -tx1 /dev/urandom | tr -d ' \\n' > poc/multi-station/secrets/gamma_source_password)
+  (umask 077; od -An -N32 -tx1 /dev/urandom | tr -d ' \n' > poc/multi-station/secrets/gamma_source_password)
 fi
 chmod 600 poc/multi-station/secrets/gamma_source_password
 ```
