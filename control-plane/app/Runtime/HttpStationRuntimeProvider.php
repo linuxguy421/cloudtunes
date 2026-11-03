@@ -23,6 +23,7 @@ class HttpStationRuntimeProvider implements StationRuntimeProvider
         }
 
         $path = '/v1/stations/'.rawurlencode((string) $station->getKey()).'/reconcile';
+        $generation = (int) $station->runtime_generation;
         $payload = [
             'operation_id' => $operationId,
             'station' => [
@@ -32,7 +33,7 @@ class HttpStationRuntimeProvider implements StationRuntimeProvider
                 'mount_path' => $station->mount_path,
                 'playback_mode' => $station->playback_mode,
                 'desired_state' => $station->desired_state,
-                'runtime_generation' => (int) $station->runtime_generation,
+                'runtime_generation' => $generation,
             ],
         ];
 
@@ -60,13 +61,17 @@ class HttpStationRuntimeProvider implements StationRuntimeProvider
 
         if (! is_array($result)
             || ! ($result['accepted'] ?? false)
-            || ! is_string($result['observed_state'] ?? null)) {
-            throw new UnexpectedValueException('Runtime controller returned an invalid reconciliation response.');
+            || ! is_string($result['operation_id'] ?? null)
+            || ! hash_equals($operationId, $result['operation_id'])
+            || ! is_int($result['runtime_generation'] ?? null)
+            || $result['runtime_generation'] !== $generation) {
+            throw new UnexpectedValueException('Runtime controller returned an invalid operation acknowledgement.');
         }
 
         return [
             'accepted' => true,
-            'observed_state' => $result['observed_state'],
+            'operation_id' => $result['operation_id'],
+            'runtime_generation' => $result['runtime_generation'],
             'message' => is_string($result['message'] ?? null) ? $result['message'] : null,
         ];
     }
