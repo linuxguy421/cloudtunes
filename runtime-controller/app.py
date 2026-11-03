@@ -263,9 +263,12 @@ def create_app(
         if not STATION_ID_PATTERN.fullmatch(station_id):
             raise HTTPException(status_code=404, detail="Station not found.")
 
-        body = await request.body()
-        if len(body) > MAX_BODY_BYTES:
-            raise HTTPException(status_code=413, detail="Runtime request is too large.")
+        body_buffer = bytearray()
+        async for chunk in request.stream():
+            body_buffer.extend(chunk)
+            if len(body_buffer) > MAX_BODY_BYTES:
+                raise HTTPException(status_code=413, detail="Runtime request is too large.")
+        body = bytes(body_buffer)
 
         verify_signature(
             secret=secret,
