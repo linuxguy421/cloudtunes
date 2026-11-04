@@ -1,13 +1,17 @@
+import sys
 import tempfile
 import unittest
 from pathlib import Path
 from uuid import uuid4
 
+# unittest discovery starts with runtime-agent/tests on sys.path, not its parent.
+# Add the agent source directory so the documented discovery command works.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
 from agent import (
     IntentStore,
     IntentValidationError,
     RuntimeAgent,
-    StationIntent,
     sign_request,
     validate_intent,
 )
