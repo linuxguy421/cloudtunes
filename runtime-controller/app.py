@@ -157,8 +157,8 @@ def persist_intent(database_path: str, request_data: ReconcileRequest, body: byt
     request_hash = hashlib.sha256(body).hexdigest()
     accepted_at = datetime.now(timezone.utc).isoformat()
 
-    if station.mount_path != f"/{station.slug}.ogg":
-        raise HTTPException(status_code=422, detail="Station mount path does not match its canonical slug.")
+    if station.mount_path != f"/stations/{station.id}.ogg":
+        raise HTTPException(status_code=422, detail="Station mount path does not match its immutable station identifier.")
 
     connection = sqlite3.connect(database_path, timeout=10, isolation_level=None)
     connection.row_factory = sqlite3.Row

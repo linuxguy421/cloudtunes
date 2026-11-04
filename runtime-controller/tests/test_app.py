@@ -46,7 +46,7 @@ def payload(
             "id": station_id,
             "name": "Night Drive",
             "slug": "night-drive",
-            "mount_path": "/night-drive.ogg",
+            "mount_path": f"/stations/{station_id}.ogg",
             "playback_mode": "random",
             "desired_state": desired_state,
             "runtime_generation": generation,
@@ -132,9 +132,9 @@ def test_expired_signature_is_rejected(client):
     assert client.post(path, content=body, headers=headers).status_code == 401
 
 
-def test_mount_path_must_match_canonical_station_slug(client):
+def test_mount_path_must_match_immutable_station_identifier(client):
     data = payload()
-    data["station"]["mount_path"] = "/other-station.ogg"
+    data["station"]["mount_path"] = "/stations/999.ogg"
 
     assert post_intent(client, data).status_code == 422
 

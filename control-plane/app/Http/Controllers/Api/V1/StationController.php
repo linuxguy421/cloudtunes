@@ -43,7 +43,9 @@ class StationController extends Controller
             $baseSlug,
         );
 
-        return response()->json(['data' => $this->present($station)], 201);
+        $station->forceFill(['mount_path' => '/stations/'.$station->getKey().'.ogg'])->save();
+
+        return response()->json(['data' => $this->present($station->refresh())], 201);
     }
 
     private function createStationWithSlugRetry(int|string $userId, string $name, string $baseSlug): Station
@@ -61,7 +63,7 @@ class StationController extends Controller
                     'status' => Station::STATUS_DRAFT,
                     'desired_state' => Station::DESIRED_STOPPED,
                     'playback_mode' => 'random',
-                    'mount_path' => '/' . $slug . '.ogg',
+                    'mount_path' => '/stations/pending-' . Str::uuid() . '.ogg',
                 ]);
             } catch (QueryException $exception) {
                 if (! $this->isSlugOrMountCollision($exception) || $attempt === 4) {

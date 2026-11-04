@@ -38,7 +38,7 @@ not be injected into the public web container.
 
 Request JSON contains an operation UUID and a station descriptor with only:
 `id`, `name`, `slug`, `mount_path`, `playback_mode`, `desired_state`, and
-`runtime_generation`. The generation is a monotonically increasing integer
+`runtime_generation`. The mount path is immutable and derived from the station's database ID (`/stations/{id}.ogg`), never from its editable slug. The generation is a monotonically increasing integer
 stored on the station row. Laravel increments it transactionally whenever a
 new start or stop intent is accepted; an idempotent repeat does not increment it. It contains no source password, media path, Docker resource
 identifier, or executable command. The controller must validate every field
@@ -92,7 +92,7 @@ mandatory because queue delivery and HTTP requests can race with newer intents.
 ## Runtime isolation requirements
 
 - One foreground Ices process/container per station.
-- One station-specific source account and unique Icecast mount per station.
+- One station-specific source account and unique Icecast mount per station, using `/stations/{station_id}.ogg`.
 - A worker receives only its own source credential and station media/playlist
   storage.
 - The Icecast config is rendered from trusted templates, validated, replaced

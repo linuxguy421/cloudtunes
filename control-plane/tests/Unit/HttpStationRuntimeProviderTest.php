@@ -32,7 +32,7 @@ class HttpStationRuntimeProviderTest extends TestCase
         $station = new Station([
             'name' => 'Night Drive',
             'slug' => 'night-drive',
-            'mount_path' => '/night-drive.ogg',
+            'mount_path' => '/stations/42.ogg',
             'playback_mode' => 'random',
             'desired_state' => Station::DESIRED_RUNNING,
             'runtime_generation' => 7,
