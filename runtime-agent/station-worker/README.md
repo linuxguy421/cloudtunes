@@ -58,3 +58,80 @@ docker build -t cloudtunes-station-worker:dev runtime-agent/station-worker
 The image deliberately has no Docker socket, Compose dependency, host port
 publication, default station, or bundled media. The runtime agent will own
 container lifecycle and health observation.
+
+
+## Isolated station-worker integration test
+
+The worker can be exercised against a disposable Icecast instance without
+starting, stopping, or mounting any of the primary CloudTunes services or
+volumes. The test Compose project uses a private internal network, publishes
+no host ports, and reads test media and secrets from a directory outside Git.
+
+Build both images first:
+
+```bash
+docker build -t cloudtunes-icecast:latest docker-icecast
+docker build -t cloudtunes-station-worker:dev runtime-agent/station-worker
+```
+
+Prepare a test directory. Place at least one Ogg file in its `media`
+subdirectory (for example, copy an existing `test-tone.ogg`). Generate
+disposable credentials; the source password is shared between the test
+Icecast instance and this single worker because the baked-in Icecast
+configuration uses its global `source` account:
+
+```bash
+TEST_DIR="${CLOUDTUNES_WORKER_TEST_DIR:-/tmp/cloudtunes-worker-test}"
+mkdir -p "$TEST_DIR/media" "$TEST_DIR/secrets"
+
+openssl rand -hex 32 > "$TEST_DIR/secrets/source_password"
+cp "$TEST_DIR/secrets/source_password" "$TEST_DIR/secrets/icecast_source_password"
+openssl rand -hex 32 > "$TEST_DIR/secrets/relay_password"
+openssl rand -hex 32 > "$TEST_DIR/secrets/admin_password"
+chmod 600 "$TEST_DIR/secrets/"*
+```
+
+If your Ogg file is elsewhere, copy it into `$TEST_DIR/media/`. Then validate
+and start the isolated test:
+
+```bash
+docker compose -p cloudtunes-worker-test \
+  -f runtime-agent/station-worker/compose.test.yaml config --quiet
+
+docker compose -p cloudtunes-worker-test \
+  -f runtime-agent/station-worker/compose.test.yaml up -d --wait
+
+docker compose -p cloudtunes-worker-test \
+  -f runtime-agent/station-worker/compose.test.yaml ps
+
+docker compose -p cloudtunes-worker-test \
+  -f runtime-agent/station-worker/compose.test.yaml logs --tail=100 station-worker
+
+docker compose -p cloudtunes-worker-test \
+  -f runtime-agent/station-worker/compose.test.yaml exec icecast \
+  wget -qO- http://127.0.0.1:8000/status-json.xsl
+```
+
+The expected live source mount is `/stations/1.ogg`. The worker health check
+reports healthy only while Icecast's status JSON contains that mount. To test
+worker recovery without restarting Icecast:
+
+```bash
+docker compose -p cloudtunes-worker-test \
+  -f runtime-agent/station-worker/compose.test.yaml restart station-worker
+
+docker compose -p cloudtunes-worker-test \
+  -f runtime-agent/station-worker/compose.test.yaml ps
+```
+
+Stop only the test project when finished:
+
+```bash
+docker compose -p cloudtunes-worker-test \
+  -f runtime-agent/station-worker/compose.test.yaml down --remove-orphans
+```
+
+Do not add production secrets, test credentials, or media files to Git. This
+test validates the worker against the current global Icecast source account;
+it does not yet validate per-station Icecast authentication or runtime-agent
+provisioning. Those are later integration steps.
