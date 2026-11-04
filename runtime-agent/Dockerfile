@@ -8,7 +8,7 @@ WORKDIR /app
 RUN useradd --system --uid 10003 --create-home --shell /usr/sbin/nologin runtime-agent \
     && install -d -o runtime-agent -g runtime-agent -m 0700 /data
 
-COPY agent.py /app/agent.py
+COPY agent.py executor.py /app/
 
 USER runtime-agent
 
