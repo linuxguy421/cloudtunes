@@ -45,7 +45,7 @@ class StationController extends Controller
             $slug = $this->nextAvailableSlug($baseSlug);
 
             try {
-                Station::query()->create([
+                $station = Station::query()->create([
                     'user_id' => $request->user()->getAuthIdentifier(),
                     'name' => $validated['name'],
                     'slug' => $slug,
