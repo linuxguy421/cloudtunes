@@ -25,15 +25,16 @@ class WebDashboardTest extends TestCase
         ]);
     }
 
-    public function test_guests_are_redirected_to_login_and_login_page_has_no_public_registration_link(): void
+    public function test_guests_are_redirected_to_login_and_login_page_hides_registration_when_disabled(): void
     {
+        config(['cloudtunes.public_registration_enabled' => false]);
         $this->get('/dashboard')->assertRedirect(route('login'));
         $this->get('/stations')->assertRedirect(route('login'));
 
         $this->get(route('login'))
             ->assertOk()
-            ->assertSee('Invite-only access')
-            ->assertDontSee('Create account');
+            ->assertDontSee('Create an account')
+            ->assertDontSee(route('register'));
     }
 
     public function test_user_can_sign_in_and_see_pending_approval_message(): void

@@ -1,7 +1,23 @@
 <?php
 
 return [
-    // Open account registration is intentionally disabled unless an operator
-    // explicitly enables it for a one-time bootstrap workflow.
-    'public_registration_enabled' => (bool) env('CLOUDTUNES_PUBLIC_REGISTRATION_ENABLED', false),
+    // Public registration is enabled by default; administrator privileges are
+    // granted separately through the cloudtunes:make-admin command.
+    'public_registration_enabled' => (bool) env('CLOUDTUNES_PUBLIC_REGISTRATION_ENABLED', true),
+
+    // Icecast is queried from the application network; listeners use the public URL.
+    'icecast_status_url' => env('ICECAST_STATUS_URL', 'http://icecast:8000/status-json.xsl'),
+    'icecast_public_url' => env('ICECAST_PUBLIC_URL', 'http://localhost:8000'),
+    'icecast_mount' => env('ICECAST_MOUNT', '/default0.ogg'),
+
+    // Runtime operations are sent by the queue worker to a separate trusted controller.
+    'runtime' => [
+        'driver' => env('CLOUDTUNES_RUNTIME_DRIVER', 'http'),
+        'controller_url' => env('CLOUDTUNES_RUNTIME_CONTROLLER_URL', 'http://runtime-controller:8090'),
+        'shared_secret' => env('CLOUDTUNES_RUNTIME_SHARED_SECRET', ''),
+        'timeout' => (int) env('CLOUDTUNES_RUNTIME_TIMEOUT', 20),
+    ],
+
+    // Optional Last.fm API key for track artwork. The player works without it.
+    'lastfm_api_key' => env('LASTFM_API_KEY'),
 ];

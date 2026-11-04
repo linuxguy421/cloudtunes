@@ -4,16 +4,28 @@ use App\Http\Controllers\Api\V1\SessionController as ApiSessionController;
 use App\Http\Controllers\Api\V1\StationController as ApiStationController;
 use App\Http\Controllers\Api\V1\UserApprovalController;
 use App\Http\Controllers\Web\Auth\LoginController;
+use App\Http\Controllers\Web\Auth\RegistrationController;
 use App\Http\Controllers\Web\DashboardController;
+use App\Http\Controllers\Web\PlayerController;
 use App\Http\Controllers\Web\StationController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn () => redirect()->route('dashboard'));
 
 Route::get('/login', [LoginController::class, 'create'])->middleware('guest')->name('login');
+Route::get('/register', [RegistrationController::class, 'create'])->middleware('guest')->name('register');
+Route::post('/register', [RegistrationController::class, 'store'])
+    ->middleware(['guest', 'throttle:5,1'])
+    ->name('register.store');
 Route::post('/login', [LoginController::class, 'store'])
     ->middleware(['guest', 'throttle:10,1'])
     ->name('login.store');
+
+// Listening is public; station management remains behind browser authentication.
+Route::get('/player', [PlayerController::class, 'show'])->name('player');
+Route::get('/player/status', [PlayerController::class, 'status'])
+    ->middleware('throttle:30,1')
+    ->name('player.status');
 
 Route::middleware('auth')->group(function (): void {
     Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
