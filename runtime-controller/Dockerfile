@@ -30,4 +30,4 @@ RUN pip install --no-cache-dir -r requirements-dev.txt
 COPY app.py .
 COPY tests ./tests
 
-CMD ["pytest", "-q", "tests"]
+CMD ["python", "-m", "pytest", "-q", "tests"]
