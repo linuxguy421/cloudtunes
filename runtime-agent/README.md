@@ -40,6 +40,34 @@ python3 -m unittest discover -s runtime-agent/tests -p 'test_*.py' -v
 docker build -t cloudtunes-runtime-agent:dev runtime-agent
 ```
 
+## Run against the isolated control-plane development stack
+
+The optional `compose.runtime-agent.dev.yaml` overlay adds only the polling
+agent and its dedicated named volume. It does not modify the root production
+Compose file or attach a Docker socket.
+
+Set the same shared secret used by the development runtime controller and
+Laravel queue worker:
+
+```sh
+export CLOUDTUNES_RUNTIME_SHARED_SECRET="$(openssl rand -hex 32)"
+docker compose -f compose.control-plane.dev.yaml \
+  -f compose.runtime-agent.dev.yaml up -d --build runtime-agent
+docker compose -f compose.control-plane.dev.yaml \
+  -f compose.runtime-agent.dev.yaml logs --tail=80 runtime-agent
+```
+
+If the development stack is already running, keep using the same secret value
+that was supplied when its controller and queue worker were started. Changing
+only the agent's secret will cause authentication failures.
+
+The agent should log that it has started and report the number of pending
+station intents on each poll. With no station intents, the expected count is
+zero. This verifies the authenticated polling path only; it does not mean a
+station has been provisioned or is live.
+
+## Next phase
+
 The next phase will add an executor behind a narrow Docker API boundary,
 station-specific credentials and storage, Icecast mount reconciliation, and
 observed health reporting. The executor will be integration-tested against
