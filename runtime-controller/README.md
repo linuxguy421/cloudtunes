@@ -5,10 +5,15 @@ worker and station runtime orchestration. It is not exposed on a host port.
 
 ## Current scope
 
-The API currently validates and durably records ordered station runtime intents
-in its own SQLite operation ledger. It does not yet create or stop Ices workers,
-change Icecast configuration, or report runtime health. Those operations belong
-to the next implementation slice.
+The API validates and durably records ordered station runtime intents in its
+own SQLite operation ledger. The authenticated `GET /v1/agent/intents` endpoint
+lets the separate runtime agent poll the latest desired state for each station.
+It returns the current intent per station (up to 500), not an event stream;
+repeated delivery is intentional and requires idempotent reconciliation.
+
+The controller still does not create or stop Ices workers, change Icecast
+configuration, or report observed runtime health. Those are executor
+responsibilities and are being implemented separately.
 
 The controller intentionally has no Docker socket in this phase. This keeps
 the initial API and ordering implementation unprivileged while its request
@@ -24,7 +29,8 @@ Requests use the CloudTunes HMAC contract:
 
 The secret is supplied as CLOUDTUNES_RUNTIME_SHARED_SECRET. The Laravel
 queue worker and this service receive the secret; the public Laravel web
-container does not.
+container does not. The runtime agent uses the same HMAC contract for
+`GET /v1/agent/intents`, signing an empty request body and the GET method.
 
 ## Ordering and idempotency
 
