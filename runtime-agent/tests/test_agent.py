@@ -15,6 +15,7 @@ from agent import (
     sign_request,
     validate_intent,
 )
+from executor import DryRunExecutor
 
 
 def make_intent(station_id="12", generation=1, desired_state="running"):
@@ -112,6 +113,74 @@ class AgentTests(unittest.TestCase):
         pending = agent.poll_once()
         self.assertEqual(len(pending), 1)
         self.assertEqual(pending[0].station_id, "12")
+
+    def test_dry_run_plans_start_without_touching_infrastructure(self):
+        intent = validate_intent(make_intent(desired_state="running"))
+        self.store.save(intent)
+
+        plans = DryRunExecutor(self.store).process(self.store.pending())
+
+        self.assertEqual(len(plans), 1)
+        self.assertEqual(plans[0]["mode"], "dry_run")
+        self.assertEqual(plans[0]["action"], "start")
+        self.assertEqual(plans[0]["prior_simulated_state"], "absent")
+        self.assertEqual(plans[0]["resulting_simulated_state"], "running")
+        self.assertEqual(self.store.pending(), [])
+
+    def test_initial_stopped_intent_is_a_no_op(self):
+        intent = validate_intent(make_intent(desired_state="stopped"))
+        self.store.save(intent)
+
+        plans = DryRunExecutor(self.store).process(self.store.pending())
+
+        self.assertEqual(plans[0]["action"], "no-op")
+        self.assertEqual(plans[0]["prior_simulated_state"], "absent")
+        self.assertEqual(plans[0]["resulting_simulated_state"], "absent")
+
+    def test_newer_stop_intent_plans_stop_after_simulated_start(self):
+        start = validate_intent(make_intent(generation=1, desired_state="running"))
+        stop = validate_intent(make_intent(generation=2, desired_state="stopped"))
+        executor = DryRunExecutor(self.store)
+
+        self.store.save(start)
+        self.assertEqual(executor.process(self.store.pending())[0]["action"], "start")
+        self.store.save(stop)
+        plans = executor.process(self.store.pending())
+
+        self.assertEqual(plans[0]["action"], "stop")
+        self.assertEqual(plans[0]["prior_simulated_state"], "running")
+        self.assertEqual(plans[0]["resulting_simulated_state"], "stopped")
+
+    def test_repeated_controller_delivery_does_not_repeat_a_plan(self):
+        intent = validate_intent(make_intent())
+        executor = DryRunExecutor(self.store)
+        self.store.save(intent)
+
+        self.assertEqual(len(executor.process(self.store.pending())), 1)
+        self.assertFalse(self.store.save(intent))
+        self.assertEqual(executor.process(self.store.pending()), [])
+
+    def test_superseded_intent_cannot_be_planned(self):
+        old = validate_intent(make_intent(generation=1))
+        latest = validate_intent(make_intent(generation=2, desired_state="stopped"))
+        self.store.save(old)
+        self.store.save(latest)
+
+        self.assertIsNone(self.store.plan(old))
+        self.assertEqual(self.store.pending()[0].generation, 2)
+
+    def test_simulated_state_survives_agent_restart(self):
+        start = validate_intent(make_intent(generation=1, desired_state="running"))
+        self.store.save(start)
+        DryRunExecutor(self.store).process(self.store.pending())
+
+        restarted_store = IntentStore(self.database)
+        stop = validate_intent(make_intent(generation=2, desired_state="stopped"))
+        restarted_store.save(stop)
+        plans = DryRunExecutor(restarted_store).process(restarted_store.pending())
+
+        self.assertEqual(plans[0]["action"], "stop")
+        self.assertEqual(plans[0]["prior_simulated_state"], "running")
 
 
 if __name__ == "__main__":
