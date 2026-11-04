@@ -28,10 +28,10 @@ reported to Laravel as observed runtime health. No containers are created or
 removed, no Icecast configuration is changed, and no media or credentials are
 mounted.
 
-The local intent lifecycle currently uses `pending`, `planned`, and
-`failed`. The plan and simulated station state survive agent restarts. The
-future infrastructure executor will add explicit in-progress and applied
-states; dry-run plans are deliberately not marked as actually applied.
+The local intent lifecycle currently uses `pending` and `planned`. The plan
+and simulated station state survive agent restarts. Failure, in-progress, and
+applied states belong to the future infrastructure executor; dry-run plans are
+deliberately not marked as actually applied.
 
 ## Configuration
 
