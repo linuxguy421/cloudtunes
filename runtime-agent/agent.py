@@ -375,21 +375,26 @@ def main() -> None:
     except (AgentError, OSError, sqlite3.Error) as exc:
         raise SystemExit(str(exc)) from exc
 
-    logging.info("Runtime agent poller started; executor is not enabled in this phase")
+    from executor import DryRunExecutor
+
+    executor = DryRunExecutor(agent.store)
+    logging.info("Runtime agent started; dry-run executor enabled (no infrastructure changes)")
     while True:
         try:
             pending = agent.poll_once()
+            plans = executor.process(pending)
             logging.info(
-                "Polled controller; %d pending station intent(s)",
-                len(pending),
+                "Polled controller; processed %d pending station intent(s)",
+                len(plans),
             )
-            for intent in pending:
+            for plan in plans:
                 logging.info(
-                    "Pending station=%s generation=%d desired_state=%s operation=%s",
-                    intent.station_id,
-                    intent.generation,
-                    intent.desired_state,
-                    intent.operation_id,
+                    "DRY-RUN station=%s generation=%d desired_state=%s action=%s simulated_state=%s",
+                    plan["station_id"],
+                    plan["runtime_generation"],
+                    plan["desired_state"],
+                    plan["action"],
+                    plan["resulting_simulated_state"],
                 )
         except (AgentError, OSError, sqlite3.Error) as exc:
             logging.error("Runtime intent poll failed: %s", exc)
