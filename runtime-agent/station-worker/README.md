@@ -17,6 +17,16 @@ not a standalone Compose service and is not wired into the live deployment yet.
 - An empty playlist is generated from Ogg files already present in `/media`.
   An empty media directory is a startup error rather than silently streaming
   generated demo audio.
+- Every playlist item is inspected with `ffprobe` before Ices starts. The
+  current playback profile accepts Ogg containers containing exactly one
+  stereo Vorbis audio stream, with a sample rate from 8 kHz through 192 kHz.
+  The Ices encoder emits the configured output format (44.1 kHz stereo by
+  default).
+- Files with an `.ogg` extension but a different container or codec (such as
+  Opus-in-Ogg), mono tracks, corrupt files, and unsupported playlists are
+  rejected with a specific startup error.
+- Upload-time conversion is not implemented yet. Original uploads are not
+  modified by the station worker.
 - The process receives SIGTERM directly and exits in the foreground.
 
 ## Required environment
@@ -47,18 +57,18 @@ Optional environment: `STATION_GENRE`, `STATION_DESCRIPTION`,
 The runtime agent must create isolated per-station storage and must not mount
 another station's media or playlist directory into this container.
 
-## Build
+## Build and test
 
 From the repository root:
 
 ```bash
 docker build -t cloudtunes-station-worker:dev runtime-agent/station-worker
+python3 -m unittest discover -s runtime-agent/station-worker -p 'test_*.py' -v
 ```
 
 The image deliberately has no Docker socket, Compose dependency, host port
 publication, default station, or bundled media. The runtime agent will own
 container lifecycle and health observation.
-
 
 ## Isolated station-worker integration test
 
@@ -74,8 +84,8 @@ docker build -t cloudtunes-icecast:latest docker-icecast
 docker build -t cloudtunes-station-worker:dev runtime-agent/station-worker
 ```
 
-Prepare a test directory. Place at least one Ogg file in its `media`
-subdirectory (for example, copy an existing `test-tone.ogg`). Generate
+Prepare a test directory. Place at least one stereo Ogg Vorbis file in its
+`media` subdirectory (for example, copy an existing `test-tone.ogg`). Generate
 disposable credentials; the source password is shared between the test
 Icecast instance and this single worker because the baked-in Icecast
 configuration uses its global `source` account:
