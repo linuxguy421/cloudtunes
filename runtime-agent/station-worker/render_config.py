@@ -9,6 +9,8 @@ import re
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
+from validate_media import MediaValidationError, inspect_ogg_vorbis
+
 STATION_ID_RE = re.compile(r"^[1-9][0-9]{0,18}$")
 SECRET_RE = re.compile(r"^[A-Za-z0-9_-]{32,128}$")
 
@@ -62,8 +64,11 @@ playlist_file = playlist_dir / "playlist.txt"
 # station's mounted Ogg files. Never generate or bundle demo audio.
 if not playlist_file.is_file() or playlist_file.stat().st_size == 0:
     tracks = sorted(
-        path for path in media_dir.glob("*.ogg")
-        if path.is_file() and "\n" not in path.name and "\r" not in path.name
+        path for path in media_dir.iterdir()
+        if path.is_file()
+        and path.suffix.lower() == ".ogg"
+        and "\n" not in path.name
+        and "\r" not in path.name
     )
     if not tracks:
         raise SystemExit("Station has no Ogg media; upload media before starting playback")
@@ -90,6 +95,15 @@ for entry in playlist_entries:
         raise SystemExit("Playlist entries must resolve to files inside /media") from exc
     if not resolved.is_file() or resolved.suffix.lower() != ".ogg":
         raise SystemExit("Every playlist entry must reference an Ogg file in /media")
+    try:
+        audio = inspect_ogg_vorbis(resolved)
+    except MediaValidationError as exc:
+        raise SystemExit(f"Unsupported station media '{resolved.name}': {exc}") from exc
+    print(
+        f"Validated {resolved.name}: Ogg Vorbis, "
+        f"{audio['sample_rate']} Hz, {audio['channels']} channels",
+        flush=True,
+    )
 
 root = ET.Element("ices")
 ET.SubElement(root, "background").text = "0"
