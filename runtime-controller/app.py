@@ -288,6 +288,53 @@ def create_app(
             raise HTTPException(status_code=503, detail="Runtime controller storage is unavailable.") from exc
         return {"status": "ok"}
 
+    @application.get("/v1/agent/intents")
+    def list_agent_intents(request: Request, response: Response) -> dict[str, object]:
+        # The agent polls the latest desired state for every station. Repeated
+        # delivery is intentional: the executor must reconcile idempotently.
+        source = request.client.host if request.client else "unknown"
+        auth_limiter.check(source)
+        try:
+            verify_signature(
+                secret=secret,
+                timestamp_header=request.headers.get("X-CloudTunes-Timestamp"),
+                signature_header=request.headers.get("X-CloudTunes-Signature"),
+                method=request.method,
+                path=request.url.path,
+                body=b"",
+            )
+        except HTTPException as exc:
+            if exc.status_code == 401:
+                auth_limiter.record_failure(source)
+            raise
+
+        with closing(sqlite3.connect(db_path, timeout=5)) as connection:
+            connection.row_factory = sqlite3.Row
+            rows = connection.execute(
+                """
+                SELECT station_id, runtime_generation, operation_id,
+                       desired_state, descriptor_json, accepted_at
+                FROM station_runtime_intents
+                ORDER BY CAST(station_id AS INTEGER)
+                LIMIT 500
+                """
+            ).fetchall()
+
+        response.headers["Cache-Control"] = "no-store"
+        return {
+            "intents": [
+                {
+                    "station_id": row["station_id"],
+                    "runtime_generation": row["runtime_generation"],
+                    "operation_id": row["operation_id"],
+                    "desired_state": row["desired_state"],
+                    "station": json.loads(row["descriptor_json"]),
+                    "accepted_at": row["accepted_at"],
+                }
+                for row in rows
+            ]
+        }
+
     @application.post("/v1/stations/{station_id}/reconcile", status_code=202)
     async def reconcile(station_id: str, request: Request, response: Response) -> dict[str, object]:
         if not STATION_ID_PATTERN.fullmatch(station_id):
