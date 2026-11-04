@@ -4,22 +4,34 @@ The runtime agent is the separate execution boundary between the runtime
 controller and station infrastructure. It is deliberately separate from the
 Laravel application and the runtime controller.
 
-## Current phase: authenticated intent polling
+## Current phase: authenticated polling and dry-run reconciliation
 
-The initial agent image:
+The agent:
 
 - Polls the controller's authenticated `GET /v1/agent/intents` endpoint.
-- Uses the same timestamped HMAC-SHA256 request contract as Laravel.
+- Uses the timestamped HMAC-SHA256 request contract shared with Laravel.
 - Validates station IDs, immutable mount paths, operation UUIDs, generations,
   station metadata, and desired state before accepting an intent.
 - Persists the latest desired intent per station in its own SQLite database.
-- Keeps intents pending until a future executor acknowledges successful
-  reconciliation. A newer generation replaces an older pending generation.
-- Runs as an unprivileged user and has no Docker socket or host mounts.
+- Calculates a deterministic action (`start`, `stop`, or `no-op`) from the
+  desired state and its locally simulated station state.
+- Persists the plan and simulated state transactionally. Repeated delivery of
+  the same generation does not execute the plan a second time.
+- Rejects stale generations and prevents a superseded intent from being
+  planned.
+- Runs as an unprivileged user with no Docker socket or host infrastructure
+  mounts.
 
-**This phase does not create containers, modify Icecast configuration, mount
-media, or create source credentials.** The log output is a reconciliation
-inbox, not evidence that a station is running.
+**This phase is simulation only.** A `DRY-RUN` log entry is not evidence that
+an Icecast mount or station worker exists, and the simulated state is not
+reported to Laravel as observed runtime health. No containers are created or
+removed, no Icecast configuration is changed, and no media or credentials are
+mounted.
+
+The local intent lifecycle currently uses `pending`, `planned`, and
+`failed`. The plan and simulated station state survive agent restarts. The
+future infrastructure executor will add explicit in-progress and applied
+states; dry-run plans are deliberately not marked as actually applied.
 
 ## Configuration
 
@@ -31,7 +43,7 @@ inbox, not evidence that a station is running.
 | `RUNTIME_AGENT_POLL_INTERVAL` | Poll interval in seconds (default 5; minimum 2) |
 | `LOG_LEVEL` | Python logging level |
 
-## Local tests
+## Local tests and image build
 
 From the repository root:
 
@@ -46,29 +58,27 @@ The optional `compose.runtime-agent.dev.yaml` overlay adds only the polling
 agent and its dedicated named volume. It does not modify the root production
 Compose file or attach a Docker socket.
 
-Set the same shared secret used by the development runtime controller and
-Laravel queue worker:
+Use the same shared secret that was supplied when the development runtime
+controller and Laravel queue worker were started. Do not generate a new secret
+for the agent alone.
 
 ```sh
-export CLOUDTUNES_RUNTIME_SHARED_SECRET="$(openssl rand -hex 32)"
 docker compose -f compose.control-plane.dev.yaml \
   -f compose.runtime-agent.dev.yaml up -d --build runtime-agent
 docker compose -f compose.control-plane.dev.yaml \
   -f compose.runtime-agent.dev.yaml logs --tail=80 runtime-agent
 ```
 
-If the development stack is already running, keep using the same secret value
-that was supplied when its controller and queue worker were started. Changing
-only the agent's secret will cause authentication failures.
-
-The agent should log that it has started and report the number of pending
-station intents on each poll. With no station intents, the expected count is
-zero. This verifies the authenticated polling path only; it does not mean a
-station has been provisioned or is live.
+A running stack with no station intents will report zero pending plans. When a
+station intent is accepted by the controller, the agent should log a
+`DRY-RUN` action and resulting simulated state. This verifies the planning
+logic only; it does not provision or stop a real station.
 
 ## Next phase
 
-The next phase will add an executor behind a narrow Docker API boundary,
-station-specific credentials and storage, Icecast mount reconciliation, and
-observed health reporting. The executor will be integration-tested against
-the disposable multi-station POC before it is connected to the live stack.
+The next phase will replace the simulated state with observed infrastructure
+state behind a narrowly scoped Docker API boundary. It will add safe
+in-progress/applied/failed transitions, station-specific credentials and
+storage, Icecast mount reconciliation, and observed health reporting. The
+infrastructure executor will be integration-tested against the disposable
+multi-station POC before it is connected to the live stack.
