@@ -165,6 +165,26 @@ class IntentStore:
                     )
                     """
                 )
+                connection.execute(
+                    """
+                    CREATE TABLE IF NOT EXISTS simulated_station_states (
+                        station_id TEXT PRIMARY KEY,
+                        state TEXT NOT NULL CHECK (state IN ('running', 'stopped')),
+                        runtime_generation INTEGER NOT NULL,
+                        updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+                    )
+                    """
+                )
+                columns = {
+                    row[1]
+                    for row in connection.execute(
+                        "PRAGMA table_info(desired_station_intents)"
+                    ).fetchall()
+                }
+                if "plan_json" not in columns:
+                    connection.execute(
+                        "ALTER TABLE desired_station_intents ADD COLUMN plan_json TEXT"
+                    )
         finally:
             os.umask(previous_umask)
 
@@ -217,6 +237,86 @@ class IntentStore:
             )
             connection.commit()
             return True
+
+    def plan(self, intent: StationIntent) -> dict[str, Any] | None:
+        """Persist a deterministic plan without touching station infrastructure."""
+        with sqlite3.connect(self.database_path, timeout=10) as connection:
+            connection.row_factory = sqlite3.Row
+            connection.execute("BEGIN IMMEDIATE")
+            row = connection.execute(
+                """
+                SELECT runtime_generation, operation_id, desired_state, status
+                FROM desired_station_intents
+                WHERE station_id = ?
+                """,
+                (intent.station_id,),
+            ).fetchone()
+            if (
+                row is None
+                or int(row["runtime_generation"]) != intent.generation
+                or row["operation_id"] != intent.operation_id
+                or row["desired_state"] != intent.desired_state
+                or row["status"] != "pending"
+            ):
+                connection.commit()
+                return None
+
+            state_row = connection.execute(
+                "SELECT state FROM simulated_station_states WHERE station_id = ?",
+                (intent.station_id,),
+            ).fetchone()
+            prior_state = state_row["state"] if state_row else "absent"
+
+            if intent.desired_state == "running":
+                action = "no-op" if prior_state == "running" else "start"
+                resulting_state = "running"
+            else:
+                action = "stop" if prior_state == "running" else "no-op"
+                resulting_state = "stopped" if prior_state == "running" else prior_state
+
+            plan = {
+                "mode": "dry_run",
+                "station_id": intent.station_id,
+                "runtime_generation": intent.generation,
+                "operation_id": intent.operation_id,
+                "desired_state": intent.desired_state,
+                "prior_simulated_state": prior_state,
+                "action": action,
+                "resulting_simulated_state": resulting_state,
+            }
+
+            if resulting_state in ("running", "stopped") and resulting_state != prior_state:
+                connection.execute(
+                    """
+                    INSERT INTO simulated_station_states (
+                        station_id, state, runtime_generation, updated_at
+                    ) VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+                    ON CONFLICT(station_id) DO UPDATE SET
+                        state = excluded.state,
+                        runtime_generation = excluded.runtime_generation,
+                        updated_at = CURRENT_TIMESTAMP
+                    """,
+                    (intent.station_id, resulting_state, intent.generation),
+                )
+
+            connection.execute(
+                """
+                UPDATE desired_station_intents
+                SET status = 'planned',
+                    plan_json = ?,
+                    last_error = NULL,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE station_id = ? AND runtime_generation = ? AND operation_id = ?
+                """,
+                (
+                    json.dumps(plan, sort_keys=True, separators=(",", ":")),
+                    intent.station_id,
+                    intent.generation,
+                    intent.operation_id,
+                ),
+            )
+            connection.commit()
+            return plan
 
     def pending(self) -> list[StationIntent]:
         with sqlite3.connect(self.database_path, timeout=5) as connection:
