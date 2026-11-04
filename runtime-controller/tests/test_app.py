@@ -20,10 +20,15 @@ def client(tmp_path):
         yield test_client
 
 
-def signed_headers(path: str, body: bytes, timestamp: int | None = None) -> dict[str, str]:
+def signed_headers(
+    path: str,
+    body: bytes,
+    timestamp: int | None = None,
+    method: str = "POST",
+) -> dict[str, str]:
     stamp = str(int(time.time()) if timestamp is None else timestamp)
     canonical = "\n".join(
-        [stamp, "POST", path, hashlib.sha256(body).hexdigest()]
+        [stamp, method.upper(), path, hashlib.sha256(body).hexdigest()]
     ).encode()
     signature = hmac.new(SECRET.encode(), canonical, hashlib.sha256).hexdigest()
     return {
@@ -63,6 +68,49 @@ def post_intent(client: TestClient, data: dict, path_station_id: str | None = No
 
 def test_health_endpoint_reports_storage_ready(client):
     assert client.get("/healthz").json() == {"status": "ok"}
+
+
+def get_agent_intents(client: TestClient):
+    path = "/v1/agent/intents"
+    return client.get(
+        path,
+        headers=signed_headers(path, b"", method="GET"),
+    )
+
+
+def test_agent_can_poll_empty_intent_list(client):
+    response = get_agent_intents(client)
+
+    assert response.status_code == 200
+    assert response.json() == {"intents": []}
+    assert response.headers["cache-control"] == "no-store"
+
+
+def test_agent_receives_latest_intent_per_station(client):
+    first = payload(station_id="12", generation=1)
+    latest = payload(station_id="12", generation=3, desired_state="stopped")
+    other = payload(station_id="4", generation=1)
+
+    assert post_intent(client, first).status_code == 202
+    assert post_intent(client, latest).status_code == 202
+    assert post_intent(client, other).status_code == 202
+
+    response = get_agent_intents(client)
+
+    assert response.status_code == 200
+    intents = response.json()["intents"]
+    assert [item["station_id"] for item in intents] == ["4", "12"]
+    assert intents[1]["runtime_generation"] == 3
+    assert intents[1]["desired_state"] == "stopped"
+    assert intents[1]["operation_id"] == latest["operation_id"]
+
+
+def test_agent_poll_requires_valid_signature(client):
+    path = "/v1/agent/intents"
+    headers = signed_headers(path, b"", method="GET")
+    headers["X-CloudTunes-Signature"] = "0" * 64
+
+    assert client.get(path, headers=headers).status_code == 401
 
 
 def test_valid_intent_is_durably_accepted(client):
