@@ -1,17 +1,17 @@
 <?php
 
-namespace Tests\\Feature;
+namespace Tests\Feature;
 
-use App\\Models\\MediaItem;
-use App\\Models\\Station;
-use App\\Models\\User;
-use App\\Services\\Media\\InvalidMediaFileException;
-use App\\Services\\Media\\MediaInspector;
-use Illuminate\\Foundation\\Testing\\RefreshDatabase;
-use Illuminate\\Http\\UploadedFile;
-use Illuminate\\Support\\Facades\\Storage;
+use App\Models\MediaItem;
+use App\Models\Station;
+use App\Models\User;
+use App\Services\Media\InvalidMediaFileException;
+use App\Services\Media\MediaInspector;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Mockery;
-use Tests\\TestCase;
+use Tests\TestCase;
 
 class MediaUploadTest extends TestCase
 {
@@ -22,13 +22,13 @@ class MediaUploadTest extends TestCase
         parent::setUp();
 
         // This API uses the browser session and web CSRF middleware.
-        \\Illuminate\\Foundation\\Http\\Middleware\\ValidateCsrfToken::except(['api/v1/*']);
+        \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::except(['api/v1/*']);
         Storage::fake('local');
     }
 
     protected function tearDown(): void
     {
-        \\Illuminate\\Foundation\\Http\\Middleware\\ValidateCsrfToken::flushState();
+        \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::flushState();
 
         parent::tearDown();
     }
@@ -38,9 +38,10 @@ class MediaUploadTest extends TestCase
         [$owner, $station] = $this->makeStation();
         $this->mockInspector($this->validInspection());
 
-        $response = $this->actingAs($owner)->postJson(
+        $response = $this->actingAs($owner)->post(
             "/api/v1/stations/{$station->id}/media",
             ['file' => UploadedFile::fake()->createWithContent('song.ogg', 'valid test payload')],
+            ['Accept' => 'application/json'],
         );
 
         $response->assertCreated()
@@ -65,9 +66,10 @@ class MediaUploadTest extends TestCase
             ->andThrow(new InvalidMediaFileException('The audio file must contain a valid ARTIST tag.'));
         $this->app->instance(MediaInspector::class, $inspector);
 
-        $this->actingAs($owner)->postJson(
+        $this->actingAs($owner)->post(
             "/api/v1/stations/{$station->id}/media",
             ['file' => UploadedFile::fake()->createWithContent('untagged.ogg', 'test payload')],
+            ['Accept' => 'application/json'],
         )->assertUnprocessable()->assertJsonValidationErrors('file');
 
         $this->assertDatabaseCount('media_items', 0);
@@ -87,9 +89,10 @@ class MediaUploadTest extends TestCase
         $inspector->shouldNotReceive('inspect');
         $this->app->instance(MediaInspector::class, $inspector);
 
-        $this->actingAs($otherUser)->postJson(
+        $this->actingAs($otherUser)->post(
             "/api/v1/stations/{$station->id}/media",
             ['file' => UploadedFile::fake()->createWithContent('song.ogg', 'payload')],
+            ['Accept' => 'application/json'],
         )->assertForbidden();
 
         $this->assertDatabaseCount('media_items', 0);
@@ -99,9 +102,10 @@ class MediaUploadTest extends TestCase
     {
         [, $station] = $this->makeStation();
 
-        $this->postJson(
+        $this->post(
             "/api/v1/stations/{$station->id}/media",
             ['file' => UploadedFile::fake()->createWithContent('song.ogg', 'payload')],
+            ['Accept' => 'application/json'],
         )->assertUnauthorized();
     }
 
@@ -112,9 +116,10 @@ class MediaUploadTest extends TestCase
         $inspector->shouldNotReceive('inspect');
         $this->app->instance(MediaInspector::class, $inspector);
 
-        $this->actingAs($owner)->postJson(
+        $this->actingAs($owner)->post(
             "/api/v1/stations/{$station->id}/media",
             ['file' => UploadedFile::fake()->createWithContent('song.mp3', 'payload')],
+            ['Accept' => 'application/json'],
         )->assertUnprocessable()->assertJsonValidationErrors('file');
 
         $this->assertDatabaseCount('media_items', 0);
@@ -129,14 +134,16 @@ class MediaUploadTest extends TestCase
 
         $upload = fn () => UploadedFile::fake()->createWithContent('same-song.ogg', 'identical audio bytes');
 
-        $this->actingAs($owner)->postJson(
+        $this->actingAs($owner)->post(
             "/api/v1/stations/{$station->id}/media",
             ['file' => $upload()],
+            ['Accept' => 'application/json'],
         )->assertCreated();
 
-        $this->actingAs($owner)->postJson(
+        $this->actingAs($owner)->post(
             "/api/v1/stations/{$station->id}/media",
             ['file' => $upload()],
+            ['Accept' => 'application/json'],
         )->assertStatus(409)->assertJsonPath('message', 'This audio file has already been uploaded to this station.');
 
         $this->assertDatabaseCount('media_items', 1);
