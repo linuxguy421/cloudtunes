@@ -57,6 +57,86 @@ class MediaUploadTest extends TestCase
         Storage::disk('local')->assertExists($mediaItem->storage_key);
     }
 
+    public function test_owner_can_upload_real_ogg_with_valid_metadata_through_endpoint(): void
+    {
+        [$owner, $station] = $this->makeStation();
+
+        $fixturePath = '/tmp/cloudtunes-test/valid-metadata.ogg';
+
+        $this->assertFileExists($fixturePath);
+
+        $file = new UploadedFile(
+            $fixturePath,
+            'valid-metadata.ogg',
+            'audio/ogg',
+            null,
+            true,
+        );
+
+        $response = $this->actingAs($owner)->post(
+            "/api/v1/stations/{$station->id}/media",
+            ['file' => $file],
+            ['Accept' => 'application/json'],
+        );
+
+        $response->assertCreated()
+            ->assertJsonPath('data.original_filename', 'valid-metadata.ogg')
+            ->assertJsonPath('data.status', MediaItem::STATUS_PENDING)
+            ->assertJsonPath('data.metadata.container', 'ogg')
+            ->assertJsonPath('data.metadata.codec', 'vorbis')
+            ->assertJsonPath('data.metadata.sample_rate', 48000)
+            ->assertJsonPath('data.metadata.channels', 2)
+            ->assertJsonPath('data.metadata.artist', 'CloudTunes Test Artist')
+            ->assertJsonPath('data.metadata.title', 'Metadata Validation Test');
+
+        $mediaItem = MediaItem::query()->firstOrFail();
+
+        $this->assertSame($station->id, $mediaItem->station_id);
+        $this->assertSame(
+            hash_file('sha256', $fixturePath),
+            $mediaItem->sha256,
+        );
+        $this->assertSame(
+            filesize($fixturePath),
+            $mediaItem->file_size_bytes,
+        );
+
+        Storage::disk('local')->assertExists($mediaItem->storage_key);
+    }
+
+    public function test_owner_cannot_upload_real_ogg_with_invalid_metadata(): void
+    {
+        [$owner, $station] = $this->makeStation();
+
+        $fixturePath = '/tmp/cloudtunes-test/invalid-metadata.ogg';
+
+        $this->assertFileExists($fixturePath);
+
+        $file = new UploadedFile(
+            $fixturePath,
+            'invalid-metadata.ogg',
+            'audio/ogg',
+            null,
+            true,
+        );
+
+        $response = $this->actingAs($owner)->post(
+            "/api/v1/stations/{$station->id}/media",
+            ['file' => $file],
+            ['Accept' => 'application/json'],
+        );
+
+        $response->assertUnprocessable()
+            ->assertJsonValidationErrors(['file']);
+
+        $this->assertDatabaseCount('media_items', 0);
+
+        $this->assertSame(
+            [],
+            Storage::disk('local')->allFiles("stations/{$station->id}/media"),
+        );
+    }
+
     public function test_upload_rejects_invalid_audio_profile_or_missing_metadata(): void
     {
         [$owner, $station] = $this->makeStation();
