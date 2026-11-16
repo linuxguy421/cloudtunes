@@ -1,18 +1,18 @@
 <?php
 
-namespace App\\Http\\Controllers\\Api\\V1;
+namespace App\Http\Controllers\Api\V1;
 
-use App\\Http\\Controllers\\Controller;
-use App\\Models\\MediaItem;
-use App\\Models\\Station;
-use App\\Services\\Media\\InvalidMediaFileException;
-use App\\Services\\Media\\MediaInspector;
-use Illuminate\\Http\\JsonResponse;
-use Illuminate\\Http\\Request;
-use Illuminate\\Support\\Facades\\Gate;
-use Illuminate\\Support\\Facades\\Storage;
-use Illuminate\\Support\\Str;
-use Illuminate\\Validation\\ValidationException;
+use App\Http\Controllers\Controller;
+use App\Models\MediaItem;
+use App\Models\Station;
+use App\Services\Media\InvalidMediaFileException;
+use App\Services\Media\MediaInspector;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use RuntimeException;
 use Throwable;
 
@@ -49,7 +49,7 @@ class MediaUploadController extends Controller
             ], 409);
         }
 
-        $originalFilename = basename(str_replace('\\\\', '/', $file->getClientOriginalName()));
+        $originalFilename = basename(str_replace('\\', '/', $file->getClientOriginalName()));
         $originalFilename = Str::limit($originalFilename, 255, '');
         $storageKey = $file->storeAs(
             'stations/'.$station->getKey().'/media',
