@@ -2,10 +2,11 @@ FROM composer:2 AS composer-bin
 FROM php:8.4-cli-alpine
 # Use PHP 8.4 to satisfy the PHP >=8.4.1 requirements in composer.lock.
 # The official PHP image already provides DOM and the XML family.
-RUN apk add --no-cache icu-libs libpq libzip sqlite-libs oniguruma libxml2 \
+RUN apk add --no-cache icu-libs libpq libzip sqlite-libs oniguruma libxml2 ffmpeg \
  && apk add --no-cache --virtual .build-deps $PHPIZE_DEPS icu-dev postgresql-dev sqlite-dev libzip-dev oniguruma-dev libxml2-dev \
  && docker-php-ext-install -j1 intl mbstring pdo_pgsql pdo_sqlite pcntl zip \
  && apk del .build-deps
+RUN printf '%s\n' 'upload_max_filesize=100M' 'post_max_size=105M' > /usr/local/etc/php/conf.d/uploads.ini
 COPY --from=composer-bin /usr/bin/composer /usr/local/bin/composer
 WORKDIR /var/www/control-plane
 COPY composer.json composer.lock ./

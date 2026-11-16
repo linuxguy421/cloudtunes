@@ -25,15 +25,16 @@ class WebDashboardTest extends TestCase
         ]);
     }
 
-    public function test_guests_are_redirected_to_login_and_login_page_has_no_public_registration_link(): void
+    public function test_guests_are_redirected_to_login_and_login_page_hides_registration_when_disabled(): void
     {
+        config(['cloudtunes.public_registration_enabled' => false]);
         $this->get('/dashboard')->assertRedirect(route('login'));
         $this->get('/stations')->assertRedirect(route('login'));
 
         $this->get(route('login'))
             ->assertOk()
-            ->assertSee('Invite-only access')
-            ->assertDontSee('Create account');
+            ->assertDontSee('Create an account')
+            ->assertDontSee(route('register'));
     }
 
     public function test_user_can_sign_in_and_see_pending_approval_message(): void
@@ -96,11 +97,14 @@ class WebDashboardTest extends TestCase
             ->assertRedirect(route('stations.index'))
             ->assertSessionHas('status');
 
+        $station = Station::query()->where('slug', 'night-drive')->firstOrFail();
+
         $this->assertDatabaseHas('stations', [
+            'id' => $station->id,
             'user_id' => $user->id,
             'name' => 'Night Drive',
             'slug' => 'night-drive',
-            'mount_path' => '/night-drive.ogg',
+            'mount_path' => '/stations/'.$station->id.'.ogg',
             'status' => Station::STATUS_DRAFT,
             'desired_state' => Station::DESIRED_STOPPED,
             'playback_mode' => 'random',
@@ -110,7 +114,7 @@ class WebDashboardTest extends TestCase
             ->get(route('stations.index'))
             ->assertOk()
             ->assertSee('Night Drive')
-            ->assertSee('/night-drive.ogg')
+            ->assertSee('/stations/'.$station->id.'.ogg')
             ->assertSee('Random');
     }
 
@@ -348,10 +352,13 @@ class WebDashboardTest extends TestCase
             ->post(route('stations.store'), ['name' => 'Night Drive'])
             ->assertRedirect(route('stations.index'));
 
+        $newStation = Station::query()->where('slug', 'night-drive-2')->firstOrFail();
+
         $this->assertDatabaseHas('stations', [
+            'id' => $newStation->id,
             'user_id' => $owner->id,
             'slug' => 'night-drive-2',
-            'mount_path' => '/night-drive-2.ogg',
+            'mount_path' => '/stations/'.$newStation->id.'.ogg',
             'deleted_at' => null,
         ]);
     }

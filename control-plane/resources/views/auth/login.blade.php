@@ -39,10 +39,9 @@
             </div>
             <button class="button" type="submit" style="width:100%">Sign in</button>
         </form>
-        <div class="notice warning" style="margin-bottom:0">
-            <strong>Invite-only access</strong>
-            <p style="margin:.35rem 0 0">CloudTunes accounts are provisioned by an administrator. Contact your administrator if you need access.</p>
-        </div>
+        @if (config('cloudtunes.public_registration_enabled'))
+            <p style="margin-bottom:0;text-align:center">New to CloudTunes? <a href="{{ route('register') }}">Create an account</a>.</p>
+        @endif
     </section>
 </main>
 @endsection

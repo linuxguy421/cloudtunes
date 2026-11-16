@@ -1,0 +1,22 @@
+# Optional development overlay for the intent-polling runtime agent.
+# Use with compose.control-plane.dev.yaml; this does not modify the live stack.
+services:
+  runtime-agent:
+    build:
+      context: ./runtime-agent
+    restart: unless-stopped
+    environment:
+      RUNTIME_CONTROLLER_URL: http://runtime-controller:8090
+      CLOUDTUNES_RUNTIME_SHARED_SECRET: ${CLOUDTUNES_RUNTIME_SHARED_SECRET:?Set CLOUDTUNES_RUNTIME_SHARED_SECRET}
+      RUNTIME_AGENT_DB: /data/runtime-agent.sqlite3
+      RUNTIME_AGENT_POLL_INTERVAL: ${RUNTIME_AGENT_POLL_INTERVAL:-5}
+      LOG_LEVEL: ${RUNTIME_AGENT_LOG_LEVEL:-INFO}
+    volumes:
+      - runtime-agent-data:/data
+    depends_on:
+      runtime-controller:
+        condition: service_healthy
+
+volumes:
+  runtime-agent-data:
+    name: cloudtunes-control-plane-dev-runtime-agent-data

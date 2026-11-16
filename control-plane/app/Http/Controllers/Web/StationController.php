@@ -45,15 +45,17 @@ class StationController extends Controller
             $slug = $this->nextAvailableSlug($baseSlug);
 
             try {
-                Station::query()->create([
+                $station = Station::query()->create([
                     'user_id' => $request->user()->getAuthIdentifier(),
                     'name' => $validated['name'],
                     'slug' => $slug,
                     'status' => Station::STATUS_DRAFT,
                     'desired_state' => Station::DESIRED_STOPPED,
                     'playback_mode' => 'random',
-                    'mount_path' => '/' . $slug . '.ogg',
+                    'mount_path' => '/stations/pending-' . Str::uuid() . '.ogg',
                 ]);
+
+                $station->forceFill(['mount_path' => '/stations/'.$station->getKey().'.ogg'])->save();
 
                 return redirect()->route('stations.index')->with('status', 'Station created. Runtime playback has not been started.');
             } catch (QueryException $exception) {

@@ -8,7 +8,6 @@ services:
       POSTGRES_DB: cloudtunes_control_plane
       POSTGRES_USER: cloudtunes
       POSTGRES_PASSWORD: cloudtunes-dev-only
-    # Optional host access; use a dedicated port so this stack does not conflict with other databases.
     ports: ["127.0.0.1:${CONTROL_PLANE_DB_PORT:-15433}:5432"]
     volumes: ["control-plane-db-data:/var/lib/postgresql/data"]
     healthcheck:
@@ -26,6 +25,10 @@ services:
       APP_KEY: "base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
       APP_URL: http://localhost:18080
       CLOUDTUNES_PUBLIC_REGISTRATION_ENABLED: ${CLOUDTUNES_PUBLIC_REGISTRATION_ENABLED:-false}
+      ICECAST_STATUS_URL: ${ICECAST_STATUS_URL:-http://host.docker.internal:8000/status-json.xsl}
+      ICECAST_PUBLIC_URL: ${ICECAST_PUBLIC_URL:-http://localhost:8000}
+      ICECAST_MOUNT: ${ICECAST_MOUNT:-/default0.ogg}
+      LASTFM_API_KEY: ${LASTFM_API_KEY:-}
       LOG_CHANNEL: stderr
       DB_CONNECTION: pgsql
       DB_HOST: control-plane-db
@@ -43,20 +46,38 @@ services:
   control-plane:
     build: { context: ./control-plane }
     environment: *control-plane-env
-    # Run PHP directly rather than through `artisan serve`, whose child server
-    # process can lose the Compose-provided environment in this dev setup.
     command: ["php","-S","0.0.0.0:8080","-t","public","public/index.php"]
     ports: ["18080:8080"]
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       control-plane-migrate: { condition: service_completed_successfully }
     volumes: ["control-plane-storage:/var/www/control-plane/storage"]
 
+  runtime-controller:
+    build: { context: ./runtime-controller }
+    restart: unless-stopped
+    environment:
+      CLOUDTUNES_RUNTIME_SHARED_SECRET: ${CLOUDTUNES_RUNTIME_SHARED_SECRET:-}
+      RUNTIME_CONTROLLER_DB: /data/runtime-controller.sqlite3
+    expose: ["8090"]
+    volumes: ["runtime-controller-data:/data"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8090/healthz', timeout=2)"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
   control-plane-worker:
     build: { context: ./control-plane }
-    environment: *control-plane-env
+    environment:
+      <<: *control-plane-env
+      CLOUDTUNES_RUNTIME_CONTROLLER_URL: http://runtime-controller:8090
+      CLOUDTUNES_RUNTIME_SHARED_SECRET: ${CLOUDTUNES_RUNTIME_SHARED_SECRET:-}
     command: ["php","artisan","queue:work","--sleep=1","--tries=3","--timeout=90"]
     depends_on:
       control-plane-migrate: { condition: service_completed_successfully }
+      runtime-controller: { condition: service_healthy }
     volumes: ["control-plane-storage:/var/www/control-plane/storage"]
 
 volumes:
@@ -64,3 +85,5 @@ volumes:
     name: cloudtunes-control-plane-dev-db-data
   control-plane-storage:
     name: cloudtunes-control-plane-dev-storage
+  runtime-controller-data:
+    name: cloudtunes-control-plane-dev-runtime-controller-data

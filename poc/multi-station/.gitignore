@@ -1,0 +1,4 @@
+secrets/*
+!secrets/.gitkeep
+data/*/*.ogg
+playlists/*/playlist.txt

@@ -112,13 +112,13 @@ class StationOnboardingTest extends TestCase
             ->postJson('/api/v1/stations', ['name' => 'Synthwave Radio'])
             ->assertCreated()
             ->assertJsonPath('data.slug', 'synthwave-radio')
-            ->assertJsonPath('data.mount_path', '/synthwave-radio.ogg')
+            ->assertJsonPath('data.mount_path', '/stations/1.ogg')
             ->assertJsonPath('data.status', 'draft');
 
         $this->postJson('/api/v1/stations', ['name' => 'Synthwave Radio'])
             ->assertCreated()
             ->assertJsonPath('data.slug', 'synthwave-radio-2')
-            ->assertJsonPath('data.mount_path', '/synthwave-radio-2.ogg');
+            ->assertJsonPath('data.mount_path', '/stations/2.ogg');
 
         $this->assertDatabaseHas('stations', [
             'user_id' => $user->id,

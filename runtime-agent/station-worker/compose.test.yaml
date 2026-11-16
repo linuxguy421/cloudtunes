@@ -1,0 +1,64 @@
+services:
+  icecast:
+    image: cloudtunes-icecast:latest
+    restart: "no"
+    secrets:
+      - icecast_source_password
+      - icecast_relay_password
+      - icecast_admin_password
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - wget -q -O /dev/null http://127.0.0.1:8000/status-json.xsl || exit 1
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
+    networks:
+      - worker-test
+
+  station-worker:
+    image: cloudtunes-station-worker:dev
+    restart: "no"
+    depends_on:
+      icecast:
+        condition: service_healthy
+    environment:
+      STATION_ID: "1"
+      STATION_NAME: "CloudTunes Worker Test"
+      STATION_MOUNT: "/stations/1.ogg"
+      SOURCE_USERNAME: "source"
+      SOURCE_PASSWORD_FILE: "/run/secrets/source_password"
+      ICECAST_HOST: "icecast"
+      ICECAST_PORT: "8000"
+      ICECAST_STATUS_URL: "http://icecast:8000/status-json.xsl"
+      PLAYBACK_MODE: "random"
+    secrets:
+      - source_password
+    volumes:
+      - ${CLOUDTUNES_WORKER_TEST_DIR:-/tmp/cloudtunes-worker-test}/media:/media:ro
+    healthcheck:
+      test:
+        - CMD
+        - python3
+        - /usr/local/bin/check_mount.py
+      interval: 5s
+      timeout: 4s
+      retries: 12
+      start_period: 15s
+    networks:
+      - worker-test
+
+secrets:
+  icecast_source_password:
+    file: ${CLOUDTUNES_WORKER_TEST_DIR:-/tmp/cloudtunes-worker-test}/secrets/icecast_source_password
+  icecast_relay_password:
+    file: ${CLOUDTUNES_WORKER_TEST_DIR:-/tmp/cloudtunes-worker-test}/secrets/relay_password
+  icecast_admin_password:
+    file: ${CLOUDTUNES_WORKER_TEST_DIR:-/tmp/cloudtunes-worker-test}/secrets/admin_password
+  source_password:
+    file: ${CLOUDTUNES_WORKER_TEST_DIR:-/tmp/cloudtunes-worker-test}/secrets/source_password
+
+networks:
+  worker-test:
+    internal: true
