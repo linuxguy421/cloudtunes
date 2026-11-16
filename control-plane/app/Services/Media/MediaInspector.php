@@ -3,6 +3,7 @@
 namespace App\Services\Media;
 
 use JsonException;
+use Symfony\Component\Process\Exception\ProcessTimedOutException;
 use Symfony\Component\Process\Process;
 
 class MediaInspector
@@ -24,7 +25,12 @@ class MediaInspector
             $path,
         ]);
         $process->setTimeout(15);
-        $process->run();
+
+        try {
+            $process->run();
+        } catch (ProcessTimedOutException) {
+            throw new InvalidMediaFileException('Audio inspection timed out; the file could not be validated.');
+        }
 
         if (! $process->isSuccessful()) {
             throw new InvalidMediaFileException('The uploaded file could not be read as valid audio.');
