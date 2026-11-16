@@ -1,9 +1,9 @@
 <?php
 
-namespace App\\Services\\Media;
+namespace App\Services\Media;
 
 use JsonException;
-use Symfony\\Component\\Process\\Process;
+use Symfony\Component\Process\Process;
 
 class MediaInspector
 {
@@ -11,8 +11,6 @@ class MediaInspector
     private const MAX_SAMPLE_RATE = 192000;
 
     /**
-     * Inspect an uploaded file and return its validated technical profile and tags.
-     *
      * @return array{container:string,codec:string,sample_rate:int,channels:int,artist:string,title:string}
      */
     public function inspect(string $path): array
@@ -99,7 +97,7 @@ class MediaInspector
             return '';
         }
 
-        $normalized = preg_replace('/\\s+/u', ' ', trim($value));
+        $normalized = preg_replace('/\s+/u', ' ', trim($value));
 
         return is_string($normalized) ? $normalized : '';
     }
@@ -109,7 +107,9 @@ class MediaInspector
         return $value === '' || in_array(mb_strtolower($value), [
             'unknown',
             'unknown artist',
+            'unknown_artist',
             'unknown title',
+            'unknown_title',
             'n/a',
             'none',
             'null',
