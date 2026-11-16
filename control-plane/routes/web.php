@@ -1,14 +1,15 @@
 <?php
 
-use App\Http\Controllers\Api\V1\SessionController as ApiSessionController;
-use App\Http\Controllers\Api\V1\StationController as ApiStationController;
-use App\Http\Controllers\Api\V1\UserApprovalController;
-use App\Http\Controllers\Web\Auth\LoginController;
-use App\Http\Controllers\Web\Auth\RegistrationController;
-use App\Http\Controllers\Web\DashboardController;
-use App\Http\Controllers\Web\PlayerController;
-use App\Http\Controllers\Web\StationController;
-use Illuminate\Support\Facades\Route;
+use App\\Http\\Controllers\\Api\\V1\\MediaUploadController;
+use App\\Http\\Controllers\\Api\\V1\\SessionController as ApiSessionController;
+use App\\Http\\Controllers\\Api\\V1\\StationController as ApiStationController;
+use App\\Http\\Controllers\\Api\\V1\\UserApprovalController;
+use App\\Http\\Controllers\\Web\\Auth\\LoginController;
+use App\\Http\\Controllers\\Web\\Auth\\RegistrationController;
+use App\\Http\\Controllers\\Web\\DashboardController;
+use App\\Http\\Controllers\\Web\\PlayerController;
+use App\\Http\\Controllers\\Web\\StationController;
+use Illuminate\\Support\\Facades\\Route;
 
 Route::get('/', fn () => redirect()->route('dashboard'));
 
@@ -47,5 +48,8 @@ Route::middleware('auth')->group(function (): void {
     Route::post('/api/v1/logout', [ApiSessionController::class, 'destroy']);
     Route::get('/api/v1/stations', [ApiStationController::class, 'index']);
     Route::post('/api/v1/stations', [ApiStationController::class, 'store']);
+    Route::post('/api/v1/stations/{station}/media', [MediaUploadController::class, 'store'])
+        ->middleware('throttle:10,1')
+        ->name('api.v1.stations.media.store');
     Route::patch('/api/v1/admin/users/{user}/approval', [UserApprovalController::class, 'update']);
 });
