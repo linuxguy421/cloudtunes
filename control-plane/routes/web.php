@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\V1\MediaApprovalController;
 use App\Http\Controllers\Api\V1\MediaUploadController;
 use App\Http\Controllers\Api\V1\SessionController as ApiSessionController;
 use App\Http\Controllers\Api\V1\StationController as ApiStationController;
@@ -51,5 +52,8 @@ Route::middleware('auth')->group(function (): void {
     Route::post('/api/v1/stations/{station}/media', [MediaUploadController::class, 'store'])
         ->middleware('throttle:10,1')
         ->name('api.v1.stations.media.store');
+    Route::post('/api/v1/stations/{station}/media/{mediaItem}/approve', [MediaApprovalController::class, 'approve'])
+        ->middleware('throttle:20,1')
+        ->name('api.v1.stations.media.approve');
     Route::patch('/api/v1/admin/users/{user}/approval', [UserApprovalController::class, 'update']);
 });

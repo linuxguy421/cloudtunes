@@ -68,6 +68,13 @@ services:
       timeout: 3s
       retries: 10
 
+  music-data-init:
+    image: alpine:3.21
+    restart: "no"
+    user: "0:0"
+    command: ["sh", "-c", "mkdir -p /data/stations && chown 82:82 /data/stations && chmod 2775 /data/stations"]
+    volumes: ["music-data:/data"]
+
   control-plane-worker:
     build: { context: ./control-plane }
     environment:
@@ -78,7 +85,10 @@ services:
     depends_on:
       control-plane-migrate: { condition: service_completed_successfully }
       runtime-controller: { condition: service_healthy }
-    volumes: ["control-plane-storage:/var/www/control-plane/storage"]
+      music-data-init: { condition: service_completed_successfully }
+    volumes:
+      - control-plane-storage:/var/www/control-plane/storage
+      - music-data:/data
 
 volumes:
   control-plane-db-data:
@@ -87,3 +97,5 @@ volumes:
     name: cloudtunes-control-plane-dev-storage
   runtime-controller-data:
     name: cloudtunes-control-plane-dev-runtime-controller-data
+  music-data:
+    name: cloudtunes-control-plane-dev-music-data

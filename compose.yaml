@@ -122,6 +122,14 @@ services:
     networks:
       - cloudtunes
 
+  music-data-init:
+    image: alpine:3.21
+    restart: "no"
+    user: "0:0"
+    command: ["sh", "-c", "mkdir -p /data/stations && chown 82:82 /data/stations && chmod 2775 /data/stations"]
+    volumes:
+      - music-data:/data
+
   control-plane-worker:
     build:
       context: ./control-plane
@@ -133,11 +141,14 @@ services:
     command: ["php", "artisan", "queue:work", "--sleep=1", "--tries=3", "--timeout=90"]
     volumes:
       - control-plane-storage:/var/www/control-plane/storage
+      - music-data:/data
     depends_on:
       control-plane-migrate:
         condition: service_completed_successfully
       runtime-controller:
         condition: service_healthy
+      music-data-init:
+        condition: service_completed_successfully
     networks:
       - cloudtunes
 
